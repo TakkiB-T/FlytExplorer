@@ -32,10 +32,14 @@ public sealed class FileOperationService : IFileOperationService, IDisposable
             op = (IFileOperation)Activator.CreateInstance(
                 Type.GetTypeFromCLSID(new Guid("3ad05575-8857-4850-9277-11b85bdb8e09"))!)!;
 
-            op.SetOperationFlags(
-                FOF_ALLOWUNDO |
-                FOF_NOCONFIRMMKDIR |
-                FOF_NOERRORUI);
+            // FOF_SILENT suppresses the Windows built-in progress dialog.
+            // We will add our own progress UI (IFileOperationProgressSink) in a later phase.
+            // FOF_ALLOWUNDO only makes sense for copy/move/delete (recycle bin); skip for rename/new folder.
+            uint flags = FOF_SILENT | FOF_NOCONFIRMMKDIR | FOF_NOERRORUI;
+            if (request.Kind is FileOperationKind.Copy or FileOperationKind.Move or FileOperationKind.Delete)
+                flags |= FOF_ALLOWUNDO;
+
+            op.SetOperationFlags(flags);
 
             if (request.OwnerHwnd != 0)
                 op.SetOwnerWindow(request.OwnerHwnd);
@@ -99,6 +103,7 @@ public sealed class FileOperationService : IFileOperationService, IDisposable
     public void Dispose() => _sta.Dispose();
 
     // --- Operation flags ---
+    private const uint FOF_SILENT          = 0x0004;  // suppress Windows built-in progress dialog
     private const uint FOF_ALLOWUNDO       = 0x0040;  // enables undo / Recycle Bin on delete
     private const uint FOF_NOCONFIRMMKDIR  = 0x0200;  // suppress mkdir confirmation dialog
     private const uint FOF_NOERRORUI       = 0x0400;  // suppress error dialogs (errors returned as HRESULT)

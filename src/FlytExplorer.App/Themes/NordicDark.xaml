@@ -76,4 +76,5 @@
     <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused"
                      Color="{StaticResource NordicTextMuted}" />
 
+
 </ResourceDictionary>

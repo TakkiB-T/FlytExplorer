@@ -8,6 +8,89 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <ResourceDictionary Source="Themes/NordicDark.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!--
+                ThemeDictionaries are required for popup/flyout overrides.
+                Popups create a new visual root and look up brushes here first,
+                bypassing flat MergedDictionaries.
+                "Default" covers both dark and light OS themes for our always-dark app.
+            -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <!-- TabView: Nordic Dark strip + tab headers.
+                         Active tab (#2A3A44) is LIGHTER than strip (#1C252C) so it visually "elevates". -->
+                    <SolidColorBrush x:Key="TabViewBackground"                        Color="#FF181F24" />
+                    <SolidColorBrush x:Key="TabViewStripBackground"                   Color="#FF1C252C" />
+                    <SolidColorBrush x:Key="TabViewStripBorderBrush"                  Color="#FF1C252C" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBackground"              Color="Transparent" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPointerOver"   Color="#FF243240" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPressed"       Color="#FF2A3A44" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected"      Color="#FF2E4458" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderForeground"              Color="#FF4A6672" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderForegroundPointerOver"   Color="#FFB0C8CC" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderForegroundPressed"       Color="#FFD4E2E0" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderForegroundSelected"      Color="#FFD4E2E0" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBorderBrushSelected"     Color="#FF72B8C4" />
+                    <SolidColorBrush x:Key="TabViewItemSeparatorBrush"                Color="#FF1C252C" />
+                    <SolidColorBrush x:Key="TabViewButtonBackground"                  Color="Transparent" />
+                    <SolidColorBrush x:Key="TabViewButtonBackgroundPointerOver"       Color="#FF2A3A44" />
+                    <SolidColorBrush x:Key="TabViewButtonForeground"                  Color="#FF72B8C4" />
+                    <SolidColorBrush x:Key="TabViewButtonForegroundPointerOver"       Color="#FFD4E2E0" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderCloseButtonForeground"       Color="#FF607E8A" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderCloseButtonForegroundPointerOver" Color="#FFD4E2E0" />
+
+                    <!-- MenuFlyout: base bg is overridden by MenuFlyoutPresenterStyle (#363636).
+                         These item-level brushes affect hover/press inside the presenter. -->
+                    <SolidColorBrush x:Key="MenuFlyoutPresenterBackground"   Color="#FF363636" />
+                    <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush"  Color="#FF505050" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemBackground"                  Color="Transparent" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver"       Color="#FF4A4A4A" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed"           Color="#FF545454" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemForeground"                  Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPointerOver"       Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed"           Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemForegroundDisabled"          Color="#FF888888" />
+                    <SolidColorBrush x:Key="MenuFlyoutSeparatorThemeBrush"             Color="#FF505050" />
+                    <SolidColorBrush x:Key="MenuFlyoutSubItemBackground"               Color="Transparent" />
+                    <SolidColorBrush x:Key="MenuFlyoutSubItemBackgroundPointerOver"    Color="#FF4A4A4A" />
+                    <SolidColorBrush x:Key="MenuFlyoutSubItemChevronForeground"        Color="#FFFFFFFF" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <!-- TabView: Nordic Dark strip + tab headers (same as Default for always-dark app) -->
+                    <SolidColorBrush x:Key="TabViewBackground"                        Color="#FF181F24" />
+                    <SolidColorBrush x:Key="TabViewStripBackground"                   Color="#FF1C252C" />
+                    <SolidColorBrush x:Key="TabViewStripBorderBrush"                  Color="#FF1C252C" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBackground"              Color="Transparent" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPointerOver"   Color="#FF243240" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPressed"       Color="#FF2A3A44" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected"      Color="#FF2E4458" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderForeground"              Color="#FF4A6672" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderForegroundPointerOver"   Color="#FFB0C8CC" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderForegroundPressed"       Color="#FFD4E2E0" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderForegroundSelected"      Color="#FFD4E2E0" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBorderBrushSelected"     Color="#FF72B8C4" />
+                    <SolidColorBrush x:Key="TabViewItemSeparatorBrush"                Color="#FF1C252C" />
+                    <SolidColorBrush x:Key="TabViewButtonBackground"                  Color="Transparent" />
+                    <SolidColorBrush x:Key="TabViewButtonBackgroundPointerOver"       Color="#FF2A3A44" />
+                    <SolidColorBrush x:Key="TabViewButtonForeground"                  Color="#FF72B8C4" />
+                    <SolidColorBrush x:Key="TabViewButtonForegroundPointerOver"       Color="#FFD4E2E0" />
+
+                    <SolidColorBrush x:Key="MenuFlyoutPresenterBackground"   Color="#FF363636" />
+                    <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush"  Color="#FF505050" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemBackground"                  Color="Transparent" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver"       Color="#FF4A4A4A" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed"           Color="#FF545454" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemForeground"                  Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPointerOver"       Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed"           Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="MenuFlyoutItemForegroundDisabled"          Color="#FF888888" />
+                    <SolidColorBrush x:Key="MenuFlyoutSeparatorThemeBrush"             Color="#FF505050" />
+                    <SolidColorBrush x:Key="MenuFlyoutSubItemBackground"               Color="Transparent" />
+                    <SolidColorBrush x:Key="MenuFlyoutSubItemBackgroundPointerOver"    Color="#FF4A4A4A" />
+                    <SolidColorBrush x:Key="MenuFlyoutSubItemChevronForeground"        Color="#FFFFFFFF" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>

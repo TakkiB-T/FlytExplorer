@@ -139,6 +139,137 @@
                 </Setter>
             </Style>
 
+            <!-- Flat square TabViewItem: replaces WinUI 3 rounded/connector default template -->
+            <Style x:Key="FlatTabStyle" TargetType="TabViewItem">
+                <Setter Property="IsTabStop"  Value="False" />
+                <Setter Property="MinWidth"   Value="80" />
+                <Setter Property="MaxWidth"   Value="200" />
+                <Setter Property="Height"     Value="36" />
+                <Setter Property="Padding"    Value="0" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TabViewItem">
+                            <Grid x:Name="RootGrid"
+                                  Background="{ThemeResource TabViewItemHeaderBackground}">
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="RootGrid.Background"   Value="{ThemeResource TabViewItemHeaderBackgroundPointerOver}" />
+                                                <Setter Target="HeaderLabel.Foreground" Value="{ThemeResource TabViewItemHeaderForegroundPointerOver}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="RootGrid.Background"   Value="{ThemeResource TabViewItemHeaderBackgroundPressed}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Selected">
+                                            <VisualState.Setters>
+                                                <Setter Target="RootGrid.Background"    Value="{ThemeResource TabViewItemHeaderBackgroundSelected}" />
+                                                <Setter Target="HeaderLabel.Foreground" Value="{ThemeResource TabViewItemHeaderForegroundSelected}" />
+                                                <Setter Target="Pipe.Opacity"           Value="1" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PointerOverSelected">
+                                            <VisualState.Setters>
+                                                <Setter Target="RootGrid.Background"    Value="{ThemeResource TabViewItemHeaderBackgroundSelected}" />
+                                                <Setter Target="HeaderLabel.Foreground" Value="{ThemeResource TabViewItemHeaderForegroundSelected}" />
+                                                <Setter Target="Pipe.Opacity"           Value="1" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PressedSelected">
+                                            <VisualState.Setters>
+                                                <Setter Target="RootGrid.Background"    Value="{ThemeResource TabViewItemHeaderBackgroundSelected}" />
+                                                <Setter Target="HeaderLabel.Foreground" Value="{ThemeResource TabViewItemHeaderForegroundSelected}" />
+                                                <Setter Target="Pipe.Opacity"           Value="1" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+
+                                <!-- Accent line at top (visible when selected) -->
+                                <Border x:Name="Pipe"
+                                        Height="2"
+                                        VerticalAlignment="Top"
+                                        Opacity="0"
+                                        Background="{ThemeResource TabViewItemHeaderBorderBrushSelected}" />
+
+                                <!-- Header text + close button -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock x:Name="HeaderLabel"
+                                               Grid.Column="0"
+                                               Margin="12,0,4,0"
+                                               Text="{TemplateBinding Header}"
+                                               Foreground="{ThemeResource TabViewItemHeaderForeground}"
+                                               FontFamily="Segoe UI Variable"
+                                               FontSize="12"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+
+                                    <!-- Named "CloseButton" so TabViewItem code-behind manages visibility -->
+                                    <Button x:Name="CloseButton"
+                                            Grid.Column="1"
+                                            Width="18" Height="18"
+                                            Margin="2,0,6,0"
+                                            Padding="0"
+                                            CornerRadius="2"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            VerticalAlignment="Center">
+                                        <FontIcon Glyph="&#xE711;"
+                                                  FontFamily="Segoe MDL2 Assets"
+                                                  FontSize="8"
+                                                  Foreground="{ThemeResource TabViewItemHeaderCloseButtonForeground}" />
+                                    </Button>
+                                </Grid>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- File-entry DataTemplate shared across all tab ListViews -->
+            <DataTemplate x:Key="FileEntryTemplate">
+                <Grid Padding="8,4" MinHeight="28">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="32" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="160" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding KindGlyph}"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="18"
+                               Foreground="{Binding Kind, Converter={StaticResource KindToForeground}}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding DisplayName}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"
+                               FontSize="13" />
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding SizeDisplay}"
+                               HorizontalAlignment="Right"
+                               Foreground="{StaticResource NordicTextMutedBrush}"
+                               VerticalAlignment="Center"
+                               FontSize="12" />
+                    <TextBlock Grid.Column="3"
+                               Text="{Binding DateModifiedDisplay}"
+                               Foreground="{StaticResource NordicTextMutedBrush}"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center"
+                               FontSize="12" />
+                </Grid>
+            </DataTemplate>
+
         </Grid.Resources>
 
         <Grid.RowDefinitions>
@@ -151,12 +282,12 @@
         <!-- ── Row 0: Drag strip (invisible, same bg as toolbar) ── -->
         <Border x:Name="DragStrip"
                 Grid.Row="0"
-                Background="{StaticResource NordicSurfaceBrush}" />
+                Background="{StaticResource NordicSidebarBrush}" />
 
-        <!-- ── Row 1: Toolbar ── -->
+        <!-- ── Row 1: Toolbar — same background as tab strip so they read as one chrome band -->
         <Grid x:Name="ToolbarGrid"
               Grid.Row="1"
-              Background="{StaticResource NordicSurfaceBrush}">
+              Background="{StaticResource NordicSidebarBrush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />   <!-- Nav buttons -->
                 <ColumnDefinition Width="*" />      <!-- Address bar (drag area) -->
@@ -203,11 +334,11 @@
                      FontFamily="Segoe UI Variable"
                      TextChanged="SearchBox_TextChanged" />
 
-            <!-- Toolbar bottom border -->
+            <!-- Toolbar bottom border — hidden because toolbar and tab strip share the same background -->
             <Border Grid.Column="0" Grid.ColumnSpan="4"
                     VerticalAlignment="Bottom"
                     Height="1"
-                    Background="{StaticResource NordicDividerBrush}" />
+                    Background="{StaticResource NordicSidebarBrush}" />
 
             <!-- Caption buttons (rightmost, same height as toolbar) -->
             <StackPanel Grid.Column="3"
@@ -331,117 +462,14 @@
             <!-- Divider -->
             <Border Grid.Column="1" Background="{StaticResource NordicDividerBrush}" />
 
-            <!-- Main file list -->
-            <Grid Grid.Column="2">
-                <ProgressRing x:Name="LoadingRing"
-                              IsActive="False"
-                              Width="48" Height="48"
-                              HorizontalAlignment="Center" VerticalAlignment="Center"
-                              Foreground="{StaticResource NordicAccentBrush}" />
-
-                <TextBlock x:Name="EmptyMessage"
-                           Text="This folder is empty"
-                           Visibility="Collapsed"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                           Foreground="{StaticResource NordicTextMutedBrush}"
-                           FontFamily="Segoe UI Variable" />
-
-                <ListView x:Name="FileListView"
-                          Background="Transparent"
-                          SelectionMode="Extended"
-                          FontFamily="Segoe UI Variable"
-                          Foreground="{StaticResource NordicTextPrimaryBrush}"
-                          ItemContainerStyle="{StaticResource FileListItemStyle}"
-                          DoubleTapped="FileListView_DoubleTapped"
-                          SelectionChanged="FileListView_SelectionChanged"
-                          KeyDown="FileListView_KeyDown"
-                          RightTapped="FileListView_RightTapped">
-                    <ListView.ContextFlyout>
-                        <MenuFlyout x:Name="ListContextMenu" Opening="ListContextMenu_Opening">
-                            <MenuFlyoutItem x:Name="MenuOpen"   Text="開く"         Click="MenuOpen_Click">
-                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A7;" /></MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutItem x:Name="MenuRename" Text="名前の変更 (F2)" Click="MenuRename_Click">
-                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8AC;" /></MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutSeparator />
-                            <MenuFlyoutItem x:Name="MenuCopy"   Text="コピー (Ctrl+C)" Click="MenuCopy_Click">
-                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutItem x:Name="MenuCut"    Text="切り取り (Ctrl+X)" Click="MenuCut_Click">
-                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C6;" /></MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutItem x:Name="MenuPaste"  Text="貼り付け (Ctrl+V)" Click="MenuPaste_Click">
-                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE77F;" /></MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutSeparator />
-                            <MenuFlyoutItem x:Name="MenuDelete" Text="削除 (Del)"  Click="MenuDelete_Click">
-                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutSeparator />
-                            <MenuFlyoutItem x:Name="MenuNewFolder" Text="新規フォルダ (Ctrl+Shift+N)" Click="MenuNewFolder_Click">
-                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8F4;" /></MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                        </MenuFlyout>
-                    </ListView.ContextFlyout>
-                    <ListView.Header>
-                        <Grid Background="{StaticResource NordicSurfaceBrush}" Padding="8,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="100" />
-                                <ColumnDefinition Width="160" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="1" Text="Name"
-                                       Foreground="{StaticResource NordicTextMutedBrush}"
-                                       FontSize="12" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="2" Text="Size"
-                                       Foreground="{StaticResource NordicTextMutedBrush}"
-                                       HorizontalAlignment="Right"
-                                       FontSize="12" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="3" Text="Date modified"
-                                       Foreground="{StaticResource NordicTextMutedBrush}"
-                                       Margin="8,0,0,0"
-                                       FontSize="12" FontWeight="SemiBold" />
-                        </Grid>
-                    </ListView.Header>
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Padding="8,4" MinHeight="28">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="32" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="100" />
-                                    <ColumnDefinition Width="160" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           Text="{Binding KindGlyph}"
-                                           FontFamily="Segoe MDL2 Assets"
-                                           FontSize="18"
-                                           Foreground="{Binding Kind, Converter={StaticResource KindToForeground}}"
-                                           VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding DisplayName}"
-                                           TextTrimming="CharacterEllipsis"
-                                           VerticalAlignment="Center"
-                                           FontSize="13" />
-                                <TextBlock Grid.Column="2"
-                                           Text="{Binding SizeDisplay}"
-                                           HorizontalAlignment="Right"
-                                           Foreground="{StaticResource NordicTextMutedBrush}"
-                                           VerticalAlignment="Center"
-                                           FontSize="12" />
-                                <TextBlock Grid.Column="3"
-                                           Text="{Binding DateModifiedDisplay}"
-                                           Foreground="{StaticResource NordicTextMutedBrush}"
-                                           Margin="8,0,0,0"
-                                           VerticalAlignment="Center"
-                                           FontSize="12" />
-                            </Grid>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-            </Grid>
+            <!-- Per-tab file browser — content (ListView, ProgressRing) built in code-behind -->
+            <TabView x:Name="MainTabView"
+                     Grid.Column="2"
+                     Background="{StaticResource NordicBackgroundBrush}"
+                     TabWidthMode="SizeToContent"
+                     TabCloseRequested="MainTabView_TabCloseRequested"
+                     AddTabButtonClick="MainTabView_AddTabButtonClick"
+                     SelectionChanged="MainTabView_SelectionChanged" />
         </Grid>
 
         <!-- ── Row 3: Status bar ── -->
