@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FlytExplorer.App/FlytExplorer.App.csproj" />
+    <Project Path="src/FlytExplorer.Core/FlytExplorer.Core.csproj" />
+    <Project Path="src/FlytExplorer.FileSystem/FlytExplorer.FileSystem.csproj" />
+    <Project Path="src/FlytExplorer.Search/FlytExplorer.Search.csproj" />
+    <Project Path="src/FlytExplorer.Shell/FlytExplorer.Shell.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FlytExplorer.UnitTests/FlytExplorer.UnitTests.csproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+</Solution>

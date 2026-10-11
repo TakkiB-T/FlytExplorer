@@ -1,0 +1,61 @@
+## Build output
+bin/
+obj/
+out/
+publish/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vsconfig
+
+## NuGet
+*.nupkg
+packages/
+!**/packages/repositories.config
+.nuget/
+
+## Rider / JetBrains
+.idea/
+*.sln.iml
+
+## VS Code
+.vscode/
+
+## Test results
+TestResults/
+coverage*.xml
+*.trx
+*.cobertura.xml
+
+## Benchmarks output (raw results are tracked, summary is not)
+benchmarks/results/*/raw/
+
+## Temp fixtures (generated at test time — not committed)
+tmp/fixtures/small_1k/
+tmp/fixtures/medium_10k/
+tmp/fixtures/large_100k/
+tmp/fixtures/unicode_names/
+
+## ops_test runtime output directories (created during test runs)
+tmp/fixtures/ops_test/copy_dest/
+tmp/fixtures/ops_test/sta_verify_dest/
+
+## Everything SDK download artefact (extracted copy is not committed either)
+lib/everything-sdk-download/
+
+## OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+## Secrets / local config
+*.local.json
+appsettings.local.*
+
+## Log files
+*.log
+logs/
