@@ -210,8 +210,6 @@ public sealed partial class MainWindow : Window
     {
         (AppWindow.Presenter as OverlappedPresenter)?.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
         InitializeComponent();
-        // Ctrl+T/W are handled by the WH_KEYBOARD thread hook (installed below) so they
-        // fire regardless of which element — if any — has WinUI 3 keyboard focus.
         InstallKeyboardHook();
         Closed += (_, _) =>
         {

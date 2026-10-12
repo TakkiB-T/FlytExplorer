@@ -5,9 +5,11 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>FlytExplorer.App</RootNamespace>
     <Platforms>x64</Platforms>
-    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
-    <!-- Unpackaged deployment — no MSIX; bootstrapper auto-initialises via NuGet targets -->
+    <!-- Unpackaged deployment — no MSIX; bootstrapper auto-initialises via NuGet targets.
+         RuntimeIdentifier is intentionally omitted for dev builds: the win-x64 RID apphost
+         embeds a native bootstrapper that crashes with E_INVALIDARG before .NET starts.
+         Use `dotnet publish -r win-x64` for release packaging. -->
     <WindowsPackageType>None</WindowsPackageType>
     <SelfContained>false</SelfContained>
     <Nullable>enable</Nullable>
