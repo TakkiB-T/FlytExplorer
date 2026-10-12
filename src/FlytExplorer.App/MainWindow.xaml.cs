@@ -96,6 +96,10 @@ public sealed partial class MainWindow : Window
 
     private readonly List<string> _favorites = new();
 
+    // Drag-and-drop state
+    private FileEntryViewModel? _dragOverTarget;   // folder being hovered over during drag
+    private List<string>        _dragSourcePaths = new(); // paths being dragged (set at DragItemsStarting)
+
     // ── DWM border colour ─────────────────────────────────────────────────
 
     [DllImport("dwmapi.dll")]
@@ -381,6 +385,7 @@ public sealed partial class MainWindow : Window
         listView.SelectionChanged          += FileListView_SelectionChanged;
         listView.KeyDown                   += FileListView_KeyDown;
         listView.DragItemsStarting         += FileList_DragItemsStarting;
+        listView.DragItemsCompleted        += (_, _) => { _dragSourcePaths.Clear(); _dragOverTarget = null; };
         listView.DragOver                  += FileList_DragOver;
         listView.ContainerContentChanging  += ListView_ContainerContentChanging;
         listView.Drop              += FileList_Drop;
@@ -1460,17 +1465,19 @@ public sealed partial class MainWindow : Window
 
     private void FileList_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
     {
-        var paths = e.Items.OfType<FileEntryViewModel>().Select(vm => vm.FullPath).ToList();
-        if (paths.Count == 0) return;
+        _dragSourcePaths = e.Items.OfType<FileEntryViewModel>().Select(vm => vm.FullPath).ToList();
+        if (_dragSourcePaths.Count == 0) return;
 
+        // Register StorageItems for cross-app drop targets (e.g. Windows Explorer)
         e.Data.RequestedOperation = DataPackageOperation.Copy | DataPackageOperation.Move;
+        var capturedPaths = _dragSourcePaths;
         e.Data.SetDataProvider(StandardDataFormats.StorageItems, async request =>
         {
             var deferral = request.GetDeferral();
             try
             {
-                var items = new List<IStorageItem>(paths.Count);
-                foreach (var p in paths)
+                var items = new List<IStorageItem>(capturedPaths.Count);
+                foreach (var p in capturedPaths)
                 {
                     try
                     {
@@ -1479,7 +1486,7 @@ public sealed partial class MainWindow : Window
                         else if (File.Exists(p))
                             items.Add(await StorageFile.GetFileFromPathAsync(p));
                     }
-                    catch { /* skip inaccessible items */ }
+                    catch { }
                 }
                 request.SetData(items);
             }
@@ -1487,44 +1494,90 @@ public sealed partial class MainWindow : Window
         });
     }
 
+    // Find the folder ListViewItem at the given position within a ListView.
+    // Uses position-based hit-testing; OriginalSource is unreliable during intra-ListView
+    // drags because the drag-visual overlay intercepts the hit test.
+    private FileEntryViewModel? GetDragFolderAtPosition(ListView lv, Windows.Foundation.Point pos)
+    {
+        for (int i = 0; i < lv.Items.Count; i++)
+        {
+            if (lv.ContainerFromIndex(i) is not ListViewItem container) continue;
+            try
+            {
+                var origin = container.TransformToVisual(lv).TransformPoint(new Windows.Foundation.Point(0, 0));
+                var w = container.ActualWidth;
+                var h = container.ActualHeight;
+                if (pos.X >= origin.X && pos.X <= origin.X + w &&
+                    pos.Y >= origin.Y && pos.Y <= origin.Y + h)
+                {
+                    if (lv.Items[i] is FileEntryViewModel vm &&
+                        vm.Kind == Core.Models.FileEntryKind.Directory)
+                        return vm;
+                    return null; // hovering over a file, not a folder
+                }
+            }
+            catch { }
+        }
+        return null;
+    }
+
     private void FileList_DragOver(object sender, DragEventArgs e)
     {
-        if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
-        var isMove = e.Modifiers.HasFlag(DragDropModifiers.Shift);
-        e.AcceptedOperation              = isMove ? DataPackageOperation.Move : DataPackageOperation.Copy;
-        e.DragUIOverride.Caption         = isMove ? "ここに移動" : "ここにコピー";
-        e.DragUIOverride.IsGlyphVisible  = true;
+        var lv     = (ListView)sender;
+        var isCopy = e.Modifiers.HasFlag(DragDropModifiers.Control);
+        e.AcceptedOperation = isCopy ? DataPackageOperation.Copy : DataPackageOperation.Move;
+
+        _dragOverTarget = GetDragFolderAtPosition(lv, e.GetPosition(lv));
+        var name = _dragOverTarget?.DisplayName;
+        e.DragUIOverride.Caption = name != null
+            ? (isCopy ? $"「{name}」にコピー" : $"「{name}」に移動")
+            : (isCopy ? "ここにコピー" : "ここに移動");
+        e.DragUIOverride.IsGlyphVisible   = true;
         e.DragUIOverride.IsContentVisible = true;
         e.Handled = true;
     }
 
     private async void FileList_Drop(object sender, DragEventArgs e)
     {
-        if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
+        var lv      = (ListView)sender;
+        var destDir = (GetDragFolderAtPosition(lv, e.GetPosition(lv)) ?? _dragOverTarget)?.FullPath
+                      ?? ActiveTab.CurrentPath;
+        var srcPaths = _dragSourcePaths.ToList();
+        _dragOverTarget   = null;
+        _dragSourcePaths.Clear();
 
         var deferral = e.GetDeferral();
-        var destPath = ActiveTab.CurrentPath;
         try
         {
-            var storageItems = await e.DataView.GetStorageItemsAsync();
-            var paths = storageItems
-                .Select(item => item.Path)
-                .Where(p => !string.IsNullOrEmpty(p))
-                .ToList();
-            if (paths.Count == 0) return;
+            // Prefer in-memory source paths (intra-app); fall back to StorageItems (cross-app)
+            if (srcPaths.Count == 0 && e.DataView.Contains(StandardDataFormats.StorageItems))
+            {
+                var storageItems = await e.DataView.GetStorageItemsAsync();
+                srcPaths = storageItems.Select(i => i.Path).Where(p => !string.IsNullOrEmpty(p)).ToList();
+            }
 
-            var kind = e.Modifiers.HasFlag(DragDropModifiers.Shift)
-                ? FileOperationKind.Move
-                : FileOperationKind.Copy;
+            // Skip if source is already in the destination folder (no-op)
+            srcPaths = srcPaths.Where(p => !string.Equals(
+                Path.GetDirectoryName(p), destDir, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (srcPaths.Count == 0) { StatusText.Text = "移動先と同じフォルダのためスキップしました"; return; }
+
+            var isCopy = e.Modifiers.HasFlag(DragDropModifiers.Control);
+            var kind   = isCopy ? FileOperationKind.Copy : FileOperationKind.Move;
+            var hwnd   = WindowNative.GetWindowHandle(this);
 
             var result = await _fileOpService.ExecuteAsync(
-                new FileOperationRequest(kind, paths, destPath, null, 0),
+                new FileOperationRequest(kind, srcPaths, destDir, null, hwnd),
                 CancellationToken.None);
 
             if (!result.Succeeded)
                 StatusText.Text = $"ドロップ失敗: {result.ErrorMessage}";
             else
-                _ = NavigateToAsync(destPath);
+                _ = NavigateToAsync(ActiveTab.CurrentPath);
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"ドロップエラー: {ex.Message}";
         }
         finally { deferral.Complete(); }
     }
