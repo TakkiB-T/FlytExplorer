@@ -30,6 +30,9 @@ public sealed class FileEntryViewModel(FileEntry entry) : INotifyPropertyChanged
         }
     }
 
+    public long?           SizeBytes    => entry.SizeBytes;
+    public DateTimeOffset? DateModified => entry.DateModified;
+
     public string SizeDisplay => entry.SizeBytes switch
     {
         null                  => "",

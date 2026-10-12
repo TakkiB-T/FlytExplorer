@@ -26,9 +26,11 @@ public sealed partial class MainWindow : Window
 {
     // ── Per-tab state ─────────────────────────────────────────────────────
 
+    private enum SortColumn { Name, Size, Date }
+
     private sealed class TabData
     {
-        public string           CurrentPath { get; set; }
+        public string           CurrentPath  { get; set; }
         public ObservableCollection<FileEntryViewModel> Items { get; } = [];
         public Stack<string>    BackStack    { get; } = new();
         public Stack<string>    ForwardStack { get; } = new();
@@ -36,6 +38,8 @@ public sealed partial class MainWindow : Window
         public ListView         ListView     { get; set; } = null!;
         public ProgressRing     Loading      { get; set; } = null!;
         public TextBlock        Empty        { get; set; } = null!;
+        public SortColumn       SortColumn   { get; set; } = SortColumn.Name;
+        public bool             SortAscending { get; set; } = true;
 
         public TabData(string initialPath) => CurrentPath = initialPath;
 
@@ -305,7 +309,7 @@ public sealed partial class MainWindow : Window
             FontFamily         = new FontFamily("Segoe UI Variable"),
             ItemContainerStyle = (Style)WindowResources["FileListItemStyle"],
             ItemTemplate       = (DataTemplate)WindowResources["FileEntryTemplate"],
-            Header             = BuildListHeader(),
+            Header             = BuildListHeader(data),
             ItemsSource        = data.Items,
         };
         // Footer: transparent hit-testable area that fills the remaining empty space below items.
@@ -485,10 +489,9 @@ public sealed partial class MainWindow : Window
 
     // ── List column header (built in code; shared per AddTab call) ────────
 
-    private static UIElement BuildListHeader()
+    private UIElement BuildListHeader(TabData tab)
     {
-        static SolidColorBrush Brush(string key) =>
-            (SolidColorBrush)Application.Current.Resources[key];
+        Brush Brush(string key) => GetThemeBrush(key);
 
         var header = new Grid { Padding = new Thickness(8, 6, 8, 6) };
         header.Background = Brush("NordicSurfaceBrush");
@@ -497,25 +500,63 @@ public sealed partial class MainWindow : Window
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(160) });
 
-        void AddHdr(string text, int col, HorizontalAlignment ha, Thickness margin)
+        TextBlock? nameHdr = null, sizeHdr = null, dateHdr = null;
+
+        void UpdateIndicators()
         {
+            if (nameHdr != null) nameHdr.Text = "Name"          + (tab.SortColumn == SortColumn.Name ? (tab.SortAscending ? " ↑" : " ↓") : "");
+            if (sizeHdr != null) sizeHdr.Text = "Size"          + (tab.SortColumn == SortColumn.Size ? (tab.SortAscending ? " ↑" : " ↓") : "");
+            if (dateHdr != null) dateHdr.Text = "Date modified" + (tab.SortColumn == SortColumn.Date ? (tab.SortAscending ? " ↑" : " ↓") : "");
+        }
+
+        TextBlock AddHdr(string label, SortColumn col, int gridCol, HorizontalAlignment ha, Thickness margin)
+        {
+            bool   isActive   = tab.SortColumn == col;
+            string indicator  = isActive ? (tab.SortAscending ? " ↑" : " ↓") : "";
             var tb = new TextBlock
             {
-                Text                = text,
+                Text                = label + indicator,
                 Foreground          = Brush("NordicTextMutedBrush"),
                 FontSize            = 12,
                 FontWeight          = Microsoft.UI.Text.FontWeights.SemiBold,
                 HorizontalAlignment = ha,
                 Margin              = margin,
+                IsHitTestVisible    = true,
             };
-            Grid.SetColumn(tb, col);
+            tb.Tapped += (_, _) =>
+            {
+                tab.SortAscending = tab.SortColumn == col ? !tab.SortAscending : true;
+                tab.SortColumn    = col;
+                ApplySort(tab);
+                UpdateIndicators();
+            };
+            Grid.SetColumn(tb, gridCol);
             header.Children.Add(tb);
+            return tb;
         }
 
-        AddHdr("Name",          1, HorizontalAlignment.Left,  new Thickness(0));
-        AddHdr("Size",          2, HorizontalAlignment.Right, new Thickness(0));
-        AddHdr("Date modified", 3, HorizontalAlignment.Left,  new Thickness(8, 0, 0, 0));
+        nameHdr = AddHdr("Name",          SortColumn.Name, 1, HorizontalAlignment.Left,  new Thickness(0));
+        sizeHdr = AddHdr("Size",          SortColumn.Size, 2, HorizontalAlignment.Right, new Thickness(0));
+        dateHdr = AddHdr("Date modified", SortColumn.Date, 3, HorizontalAlignment.Left,  new Thickness(8, 0, 0, 0));
         return header;
+    }
+
+    private void ApplySort(TabData tab)
+    {
+        var dirs = tab.Items.OrderBy(x => x.Kind != FlytExplorer.Core.Models.FileEntryKind.Directory);
+        var sorted = (tab.SortColumn, tab.SortAscending) switch
+        {
+            (SortColumn.Name, true)  => dirs.ThenBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase),
+            (SortColumn.Name, false) => dirs.ThenByDescending(x => x.DisplayName, StringComparer.OrdinalIgnoreCase),
+            (SortColumn.Size, true)  => dirs.ThenBy(x => x.SizeBytes ?? long.MinValue),
+            (SortColumn.Size, false) => dirs.ThenByDescending(x => x.SizeBytes ?? long.MinValue),
+            (SortColumn.Date, true)  => dirs.ThenBy(x => x.DateModified),
+            (SortColumn.Date, false) => dirs.ThenByDescending(x => x.DateModified),
+            _                        => dirs.ThenBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase),
+        };
+        var list = sorted.ToList();
+        tab.Items.Clear();
+        foreach (var vm in list) tab.Items.Add(vm);
     }
 
     // ── Navigation ────────────────────────────────────────────────────────
@@ -570,8 +611,9 @@ public sealed partial class MainWindow : Window
             if (firstMs < 0) firstMs = sw.ElapsedMilliseconds;
 
             sw.Stop();
-            tab.CurrentPath      = path;
-            AddressBox.Text      = path;
+            tab.CurrentPath = path;
+            AddressBox.Text = path;
+            if (count > 0) ApplySort(tab);
             StatusText.Text      = count == 0
                 ? "0 items"
                 : $"{count} items  (first {firstMs} ms · total {sw.ElapsedMilliseconds} ms)";
@@ -1240,7 +1282,7 @@ public sealed partial class MainWindow : Window
         _searchLastText   = string.Empty;
         var lv = ActiveTab.ListView;
         lv.ItemTemplate = (DataTemplate)WindowResources["FileEntryTemplate"];
-        lv.Header = BuildListHeader();
+        lv.Header = BuildListHeader(ActiveTab);
         SearchPagination.Visibility = Visibility.Collapsed;
     }
 

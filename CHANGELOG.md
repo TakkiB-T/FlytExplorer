@@ -2,6 +2,19 @@
 
 All notable changes to FlytExplorer are documented here.
 
+## [0.10.0] — Column sort
+
+### Added
+- **Click-to-sort column headers** — Name, Size, and Date modified headers are now clickable.
+  Clicking a column sorts ascending (↑); clicking again reverses to descending (↓).
+  Directories always sort before files. Sort state is preserved per tab.
+- `SortColumn` enum and `SortAscending`/`SortColumn` state added to `TabData`.
+- `ApplySort(TabData)` — in-place LINQ sort of the `ObservableCollection`; called automatically
+  after each navigation and on header click.
+- `FileEntryViewModel.SizeBytes` and `FileEntryViewModel.DateModified` — exposed for sorting.
+
+---
+
 ## [0.9.3] — App icon
 
 ### Added
