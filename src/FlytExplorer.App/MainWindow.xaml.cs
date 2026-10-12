@@ -85,8 +85,8 @@ public sealed partial class MainWindow : Window
 
     private MenuFlyout?     _contextMenu;
     private MenuFlyoutItem? _menuOpen, _menuRename, _menuCopy, _menuCut,
-                            _menuPaste, _menuDelete, _menuNewFolder, _menuProperties,
-                            _menuCopyPath, _menuOpenTerminal;
+                            _menuPaste, _menuDelete, _menuNewFolder, _menuNewFile,
+                            _menuProperties, _menuCopyPath, _menuOpenTerminal;
 
     // ── DWM border colour ─────────────────────────────────────────────────
 
@@ -458,6 +458,7 @@ public sealed partial class MainWindow : Window
         _menuNewFolder = MakeMenuItem("新規フォルダ (Ctrl+Shift+N)",  "", MenuNewFolder_Click);
         _menuProperties = MakeMenuItem("プロパティ",              "", MenuProperties_Click);
 
+        _menuNewFile      = MakeMenuItem("新規ファイル",         "", MenuNewFile_Click);
         _menuCopyPath     = MakeMenuItem("パスをコピー",        "", MenuCopyPath_Click);
         _menuOpenTerminal = MakeMenuItem("ターミナルで開く",    "", MenuOpenTerminal_Click);
 
@@ -477,6 +478,7 @@ public sealed partial class MainWindow : Window
         _contextMenu.Items.Add(_menuDelete);
         _contextMenu.Items.Add(new MenuFlyoutSeparator());
         _contextMenu.Items.Add(_menuNewFolder);
+        _contextMenu.Items.Add(_menuNewFile);
         _contextMenu.Items.Add(_menuOpenTerminal);
         _contextMenu.Items.Add(new MenuFlyoutSeparator());
         _contextMenu.Items.Add(_menuProperties);
@@ -893,6 +895,7 @@ public sealed partial class MainWindow : Window
         _menuPaste!.IsEnabled        = hasClipboard;
         _menuCopyPath!.IsEnabled     = hasSelection;
         _menuDelete!.IsEnabled       = hasSelection;
+        _menuNewFile!.IsEnabled      = true;
         _menuOpenTerminal!.IsEnabled = true;
     }
 
@@ -910,6 +913,7 @@ public sealed partial class MainWindow : Window
     private void MenuPaste_Click(object sender, RoutedEventArgs e)     => _ = PasteAsync();
     private void MenuDelete_Click(object sender, RoutedEventArgs e)    => _ = DeleteSelectedAsync(permanent: false);
     private void MenuNewFolder_Click(object sender, RoutedEventArgs e)  => _ = NewFolderAsync();
+    private void MenuNewFile_Click(object sender, RoutedEventArgs e)    => _ = NewFileAsync();
     private void MenuProperties_Click(object sender, RoutedEventArgs e) => _ = ShowPropertiesAsync();
 
     private void MenuCopyPath_Click(object sender, RoutedEventArgs e)
@@ -1127,6 +1131,52 @@ public sealed partial class MainWindow : Window
             await ShowErrorAsync($"フォルダ作成に失敗しました: {outcome.ErrorMessage}");
         else
             _ = NavigateToAsync(ActiveTab.CurrentPath);
+    }
+
+    private async Task NewFileAsync()
+    {
+        var nameBox = new TextBox
+        {
+            Text            = "新規ファイル.txt",
+            SelectionStart  = 0,
+            SelectionLength = 6,
+        };
+        var dialog = new ContentDialog
+        {
+            Title             = "新規ファイル",
+            Content           = nameBox,
+            PrimaryButtonText = "作成",
+            CloseButtonText   = "キャンセル",
+            DefaultButton     = ContentDialogButton.Primary,
+            XamlRoot          = this.Content.XamlRoot,
+        };
+
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        var name = nameBox.Text.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+        if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        {
+            await ShowErrorAsync("ファイル名に使えない文字が含まれています。");
+            return;
+        }
+
+        var destPath = Path.Combine(ActiveTab.CurrentPath, name);
+        if (File.Exists(destPath))
+        {
+            await ShowErrorAsync($"同名のファイルが既に存在します: {name}");
+            return;
+        }
+
+        try
+        {
+            await Task.Run(() => { using var fs = File.Create(destPath); });
+            _ = NavigateToAsync(ActiveTab.CurrentPath);
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorAsync($"ファイル作成に失敗しました: {ex.Message}");
+        }
     }
 
     private async Task ShowPropertiesAsync()

@@ -2,6 +2,16 @@
 
 All notable changes to FlytExplorer are documented here.
 
+## [0.12.0] — New file
+
+### Added
+- **「新規ファイル」** context menu item — creates a new empty file in the current folder.
+  A dialog prompts for the filename (default: "新規ファイル.txt" with the base name pre-selected).
+  Invalid characters and name collisions are validated before creation.
+  The folder view refreshes automatically after the file is created.
+
+---
+
 ## [0.11.0] — Copy path, Open terminal, Selection size
 
 ### Added
