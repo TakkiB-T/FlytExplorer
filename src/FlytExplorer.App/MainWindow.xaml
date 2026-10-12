@@ -524,6 +524,26 @@
                             </StackPanel>
                         </Button>
 
+                        <Border Height="1" Background="{StaticResource NordicDividerBrush}"
+                                Margin="10,8" />
+
+                        <TextBlock Text="NETWORK"
+                                   Foreground="{StaticResource NordicTextMutedBrush}"
+                                   FontFamily="Segoe UI Variable"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   Margin="14,0,0,4" />
+
+                        <Button Style="{StaticResource SidebarNavStyle}"
+                                Click="NetworkNav_Click">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="&#xE968;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                           Foreground="{StaticResource NordicAccentBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Network path…" FontFamily="Segoe UI Variable" FontSize="13"
+                                           Foreground="{StaticResource NordicTextMutedBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
                     </StackPanel>
                 </ScrollViewer>
             </Grid>

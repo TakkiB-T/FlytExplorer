@@ -65,6 +65,25 @@ public sealed class LocalFolderProviderTests : IDisposable
             () => Collect(_root, cts.Token));
     }
 
+    // ── Phase 3 network / error-path tests ──────────────────────────────
+
+    [Fact]
+    public async Task EnumerateAsync_NonExistentLocalPath_ThrowsException()
+    {
+        var bogus = Path.Combine(Path.GetTempPath(), "FlytExplorer_NonExistent_" + Guid.NewGuid().ToString("N"));
+        await Assert.ThrowsAnyAsync<Exception>(() => Collect(bogus));
+    }
+
+    [Fact]
+    public async Task EnumerateAsync_ImmediatelyCancelledToken_ThrowsOperationCancelled()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel(); // cancel before enumeration starts
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => Collect(@"\\localhost\nonexistent_flyt_share_test", cts.Token));
+    }
+
     private async Task<List<FileEntry>> Collect(string path, CancellationToken ct = default)
     {
         var list = new List<FileEntry>();

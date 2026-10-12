@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.ApplicationModel.DataTransfer.DragDrop;
 using Windows.Foundation;
 using Windows.Graphics;
 using Windows.Storage;
@@ -284,9 +285,14 @@ public sealed partial class MainWindow : Window
         listView.SizeChanged += (_, _) => UpdateFooterHeight();
         data.Items.CollectionChanged += (_, _) => DispatcherQueue.TryEnqueue(UpdateFooterHeight);
 
+        listView.CanDragItems      = true;
+        listView.AllowDrop         = true;
         listView.DoubleTapped     += FileListView_DoubleTapped;
         listView.SelectionChanged += FileListView_SelectionChanged;
         listView.KeyDown          += FileListView_KeyDown;
+        listView.DragItemsStarting += FileList_DragItemsStarting;
+        listView.DragOver          += FileList_DragOver;
+        listView.Drop              += FileList_Drop;
 
         data.ListView = listView;
         data.Loading  = loadingRing;
@@ -477,14 +483,23 @@ public sealed partial class MainWindow : Window
     {
         var tab = ActiveTab;
         tab.EnumerationCts?.Cancel();
-        tab.EnumerationCts = new CancellationTokenSource();
-        var cts = tab.EnumerationCts;
+        var baseCts = new CancellationTokenSource();
+        tab.EnumerationCts = baseCts;
+
+        // UNC paths: add a 10 s timeout so the UI is not frozen on unreachable shares.
+        // The background Task.Run thread may remain blocked until Windows times out (~30 s).
+        bool isUnc = path.StartsWith("\\\\", StringComparison.Ordinal);
+        using var uncTimeoutCts = isUnc ? new CancellationTokenSource(10_000) : null;
+        using var linkedCts     = uncTimeoutCts is not null
+            ? CancellationTokenSource.CreateLinkedTokenSource(baseCts.Token, uncTimeoutCts.Token)
+            : null;
+        var token = linkedCts?.Token ?? baseCts.Token;
 
         tab.Items.Clear();
         tab.Loading.IsActive = true;
         tab.Empty.Visibility = Visibility.Collapsed;
         AddressBox.Text      = path;
-        StatusText.Text      = $"Loading {path}…";
+        StatusText.Text      = isUnc ? $"ネットワーク接続中: {path}…" : $"Loading {path}…";
         UpdateSelectionStatus();
 
         var sw       = System.Diagnostics.Stopwatch.StartNew();
@@ -495,7 +510,7 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            await foreach (var entry in _folderProvider.EnumerateAsync(path, cts.Token))
+            await foreach (var entry in _folderProvider.EnumerateAsync(path, token))
             {
                 buf.Add(new FileEntryViewModel(entry));
                 count++;
@@ -506,7 +521,7 @@ public sealed partial class MainWindow : Window
                     if (firstMs < 0) firstMs = sw.ElapsedMilliseconds;
                     buf.Clear();
                     await Task.Yield();
-                    if (cts.IsCancellationRequested) break;
+                    if (token.IsCancellationRequested) break;
                 }
             }
 
@@ -523,9 +538,14 @@ public sealed partial class MainWindow : Window
             UpdateActiveTabHeader();
             ExitSearchMode();
         }
+        catch (OperationCanceledException) when (uncTimeoutCts?.IsCancellationRequested == true && !baseCts.IsCancellationRequested)
+        {
+            StatusText.Text = $"ネットワーク接続タイムアウト: {path}";
+        }
         catch (OperationCanceledException) { }
-        catch (UnauthorizedAccessException ex) { StatusText.Text = $"アクセス拒否: {ex.Message}"; }
-        catch (DirectoryNotFoundException   ex) { StatusText.Text = $"フォルダが見つかりません: {ex.Message}"; }
+        catch (UnauthorizedAccessException ex) { StatusText.Text = isUnc ? $"アクセス拒否 (認証が必要な可能性があります): {ex.Message}" : $"アクセス拒否: {ex.Message}"; }
+        catch (DirectoryNotFoundException   ex) { StatusText.Text = isUnc ? $"ネットワークパスが見つかりません: {ex.Message}" : $"フォルダが見つかりません: {ex.Message}"; }
+        catch (IOException                  ex) when (isUnc) { StatusText.Text = $"ネットワークエラー: {ex.Message}"; }
         catch (Exception                    ex) { StatusText.Text = $"エラー: {ex.Message}"; }
         finally { tab.Loading.IsActive = false; }
     }
@@ -541,6 +561,14 @@ public sealed partial class MainWindow : Window
     {
         if (sender is Button { Tag: string path } && Directory.Exists(path))
             Navigate(path);
+    }
+
+    private void NetworkNav_Click(object sender, RoutedEventArgs e)
+    {
+        AddressBox.Text = "\\\\";
+        AddressBox.Focus(FocusState.Keyboard);
+        AddressBox.SelectionStart  = 2;
+        AddressBox.SelectionLength = 0;
     }
 
     private void BackButton_Click(object sender, RoutedEventArgs e)
@@ -977,6 +1005,79 @@ public sealed partial class MainWindow : Window
             XamlRoot        = this.Content.XamlRoot,
         };
         await dialog.ShowAsync();
+    }
+
+    // ── Drag and drop ────────────────────────────────────────────────────
+
+    private void FileList_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
+    {
+        var paths = e.Items.OfType<FileEntryViewModel>().Select(vm => vm.FullPath).ToList();
+        if (paths.Count == 0) return;
+
+        e.Data.RequestedOperation = DataPackageOperation.Copy | DataPackageOperation.Move;
+        e.Data.SetDataProvider(StandardDataFormats.StorageItems, async request =>
+        {
+            var deferral = request.GetDeferral();
+            try
+            {
+                var items = new List<IStorageItem>(paths.Count);
+                foreach (var p in paths)
+                {
+                    try
+                    {
+                        if (Directory.Exists(p))
+                            items.Add(await StorageFolder.GetFolderFromPathAsync(p));
+                        else if (File.Exists(p))
+                            items.Add(await StorageFile.GetFileFromPathAsync(p));
+                    }
+                    catch { /* skip inaccessible items */ }
+                }
+                request.SetData(items);
+            }
+            finally { deferral.Complete(); }
+        });
+    }
+
+    private void FileList_DragOver(object sender, DragEventArgs e)
+    {
+        if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
+        var isMove = e.Modifiers.HasFlag(DragDropModifiers.Shift);
+        e.AcceptedOperation              = isMove ? DataPackageOperation.Move : DataPackageOperation.Copy;
+        e.DragUIOverride.Caption         = isMove ? "ここに移動" : "ここにコピー";
+        e.DragUIOverride.IsGlyphVisible  = true;
+        e.DragUIOverride.IsContentVisible = true;
+        e.Handled = true;
+    }
+
+    private async void FileList_Drop(object sender, DragEventArgs e)
+    {
+        if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
+
+        var deferral = e.GetDeferral();
+        var destPath = ActiveTab.CurrentPath;
+        try
+        {
+            var storageItems = await e.DataView.GetStorageItemsAsync();
+            var paths = storageItems
+                .Select(item => item.Path)
+                .Where(p => !string.IsNullOrEmpty(p))
+                .ToList();
+            if (paths.Count == 0) return;
+
+            var kind = e.Modifiers.HasFlag(DragDropModifiers.Shift)
+                ? FileOperationKind.Move
+                : FileOperationKind.Copy;
+
+            var result = await _fileOpService.ExecuteAsync(
+                new FileOperationRequest(kind, paths, destPath, null, 0),
+                CancellationToken.None);
+
+            if (!result.Succeeded)
+                StatusText.Text = $"ドロップ失敗: {result.ErrorMessage}";
+            else
+                _ = NavigateToAsync(destPath);
+        }
+        finally { deferral.Complete(); }
     }
 
     private async Task ShowErrorAsync(string message)
