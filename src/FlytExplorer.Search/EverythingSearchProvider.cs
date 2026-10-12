@@ -58,12 +58,15 @@ public sealed class EverythingSearchProvider : ISearchProvider
         }
     }
 
+    // Public for unit testing — keeps query-building logic isolated from IPC calls.
+    public static string BuildQuery(string text, string? scopePath) =>
+        string.IsNullOrEmpty(scopePath)
+            ? text
+            : $"path:\"{scopePath}\" {text}";
+
     private static SearchPage ExecuteQuery(SearchRequest request)
     {
-        // Build scoped query when path is provided
-        var query = string.IsNullOrEmpty(request.ScopePath)
-            ? request.Text
-            : $"path:{request.ScopePath} {request.Text}";
+        var query = BuildQuery(request.Text, request.ScopePath);
 
         EverythingNative.Everything_SetSearchW(query);
         EverythingNative.Everything_SetRequestFlags(

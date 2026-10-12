@@ -441,16 +441,10 @@ public sealed partial class MainWindow : Window
         _menuNewFolder = MakeMenuItem("新規フォルダ (Ctrl+Shift+N)",  "", MenuNewFolder_Click);
         _menuProperties = MakeMenuItem("プロパティ",              "", MenuProperties_Click);
 
-        var presenterStyle = new Style(typeof(MenuFlyoutPresenter));
-        presenterStyle.Setters.Add(new Setter(Control.BackgroundProperty,
-            new SolidColorBrush(Color.FromArgb(0xFF, 0x36, 0x36, 0x36))));
-        presenterStyle.Setters.Add(new Setter(Control.BorderBrushProperty,
-            new SolidColorBrush(Color.FromArgb(0xFF, 0x50, 0x50, 0x50))));
-        presenterStyle.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
-        presenterStyle.Setters.Add(new Setter(Control.CornerRadiusProperty,    new CornerRadius(8)));
-        presenterStyle.Setters.Add(new Setter(Control.PaddingProperty,         new Thickness(4)));
-
-        _contextMenu = new MenuFlyout { MenuFlyoutPresenterStyle = presenterStyle };
+        _contextMenu = new MenuFlyout
+        {
+            MenuFlyoutPresenterStyle = (Style)WindowResources["NordicMenuFlyoutPresenterStyle"],
+        };
         _contextMenu.Opening += ListContextMenu_Opening;
         _contextMenu.Items.Add(_menuOpen);
         _contextMenu.Items.Add(_menuRename);

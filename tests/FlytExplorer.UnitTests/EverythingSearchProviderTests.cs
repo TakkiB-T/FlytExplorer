@@ -123,4 +123,42 @@ public sealed class EverythingSearchProviderTests
 
         Assert.Equal(latestGen, page.Generation);
     }
+
+    // ── Phase 8 BuildQuery tests (no Everything required) ────────────────
+
+    [Fact]
+    public void BuildQuery_NoScope_ReturnsTextOnly()
+    {
+        var q = EverythingSearchProvider.BuildQuery("*.jpg", null);
+        Assert.Equal("*.jpg", q);
+    }
+
+    [Fact]
+    public void BuildQuery_EmptyScope_ReturnsTextOnly()
+    {
+        var q = EverythingSearchProvider.BuildQuery("*.jpg", "");
+        Assert.Equal("*.jpg", q);
+    }
+
+    [Fact]
+    public void BuildQuery_ScopeWithoutSpaces_QuotesPath()
+    {
+        var q = EverythingSearchProvider.BuildQuery("*.txt", @"C:\Projects");
+        Assert.Equal(@"path:""C:\Projects"" *.txt", q);
+    }
+
+    [Fact]
+    public void BuildQuery_ScopeWithSpaces_QuotesPath()
+    {
+        // Paths with spaces must be quoted so Everything parses them correctly.
+        var q = EverythingSearchProvider.BuildQuery("report", @"C:\Users\John Doe\Documents");
+        Assert.Equal(@"path:""C:\Users\John Doe\Documents"" report", q);
+    }
+
+    [Fact]
+    public void BuildQuery_UncScope_QuotesPath()
+    {
+        var q = EverythingSearchProvider.BuildQuery("*.log", @"\\server\share\logs");
+        Assert.Equal(@"path:""\\server\share\logs"" *.log", q);
+    }
 }
