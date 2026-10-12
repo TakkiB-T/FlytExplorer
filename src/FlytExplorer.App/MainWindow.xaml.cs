@@ -1,4 +1,6 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Runtime.InteropServices;
 using FlytExplorer.Core.Interfaces;
 using FlytExplorer.FileSystem;
@@ -55,6 +57,7 @@ public sealed partial class MainWindow : Window
     private readonly ShellThumbnailService    _thumbnailService  = new();
 
     private bool _showHiddenFiles = false;
+    private readonly List<string> _navHistory = new(50);
 
     // ── Sidebar shortcut paths (x:Bind targets must be public) ───────────
 
@@ -634,6 +637,7 @@ public sealed partial class MainWindow : Window
             sw.Stop();
             tab.CurrentPath = path;
             AddressBox.Text = path;
+            AddToHistory(path);
             if (count > 0) ApplySort(tab);
             StatusText.Text      = count == 0
                 ? "0 items"
@@ -702,14 +706,34 @@ public sealed partial class MainWindow : Window
     {
         AddressBox.Text = "\\\\";
         AddressBox.Focus(FocusState.Keyboard);
-        AddressBox.SelectionStart  = 2;
-        AddressBox.SelectionLength = 0;
     }
 
     private void FocusAddressBar()
     {
         AddressBox.Focus(FocusState.Keyboard);
-        AddressBox.SelectAll();
+    }
+
+    private void AddToHistory(string path)
+    {
+        _navHistory.Remove(path);
+        _navHistory.Insert(0, path);
+        if (_navHistory.Count > 50) _navHistory.RemoveAt(_navHistory.Count - 1);
+    }
+
+    private void AddressBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
+        var q = sender.Text.Trim();
+        sender.ItemsSource = string.IsNullOrEmpty(q)
+            ? (IEnumerable<string>)_navHistory
+            : _navHistory.Where(h => h.StartsWith(q, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void AddressBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        var path = (args.ChosenSuggestion as string ?? args.QueryText).Trim();
+        if (Directory.Exists(path)) Navigate(path);
+        else StatusText.Text = $"パスが見つかりません: {path}";
     }
 
     private void GoBack()
@@ -748,14 +772,6 @@ public sealed partial class MainWindow : Window
         _showHiddenFiles = !_showHiddenFiles;
         ShowHiddenButton.Opacity = _showHiddenFiles ? 1.0 : 0.35;
         _ = NavigateToAsync(ActiveTab.CurrentPath);
-    }
-
-    private void AddressBox_KeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        if (e.Key != VirtualKey.Enter) return;
-        var path = AddressBox.Text.Trim();
-        if (Directory.Exists(path)) Navigate(path);
-        else StatusText.Text = $"パスが見つかりません: {path}";
     }
 
     // ── ListView interactions ─────────────────────────────────────────────

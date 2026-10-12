@@ -2,6 +2,26 @@
 
 All notable changes to FlytExplorer are documented here.
 
+## [0.15.0] — Address bar history with AutoSuggestBox
+
+### Changed
+- **Address bar** replaced `TextBox` with `AutoSuggestBox` — the address bar now shows a
+  dropdown of previously-visited paths as you type. Typing filters the history by prefix.
+  Selecting a suggestion or pressing Enter navigates immediately.
+
+### Added
+- **Navigation history** — every successful navigation is recorded in an in-memory list
+  (max 50 entries, most-recent first, no duplicates). The list persists for the session.
+- `AddToHistory(string)` — deduplicates and caps the list at 50 entries.
+- `AddressBox_TextChanged` / `AddressBox_QuerySubmitted` event handlers.
+
+### Removed
+- `AddressBox_KeyDown` handler (superseded by `AddressBox_QuerySubmitted`).
+- `SelectAll()` / `SelectionStart` / `SelectionLength` calls removed from address bar
+  helpers (these properties do not exist on `AutoSuggestBox`).
+
+---
+
 ## [0.14.0] — Folder size in Properties, Extension column and sort
 
 ### Added

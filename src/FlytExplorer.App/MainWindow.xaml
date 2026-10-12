@@ -393,8 +393,8 @@
                         AutomationProperties.Name="隠しファイルを表示" />
             </StackPanel>
 
-            <!-- Address bar (also acts as drag region via SetTitleBar on ToolbarGrid) -->
-            <TextBox x:Name="AddressBox"
+            <!-- Address bar with history suggestions -->
+            <AutoSuggestBox x:Name="AddressBox"
                      Grid.Column="1"
                      VerticalAlignment="Center"
                      Margin="4,0"
@@ -403,7 +403,9 @@
                      BorderBrush="{ThemeResource NordicDividerBrush}"
                      FontFamily="Segoe UI Variable"
                      AutomationProperties.Name="アドレスバー"
-                     KeyDown="AddressBox_KeyDown" />
+                     QueryIcon="Find"
+                     TextChanged="AddressBox_TextChanged"
+                     QuerySubmitted="AddressBox_QuerySubmitted" />
 
             <!-- Search area: scope badge + search box -->
             <Grid Grid.Column="2" Margin="0,0,4,0" VerticalAlignment="Center">
