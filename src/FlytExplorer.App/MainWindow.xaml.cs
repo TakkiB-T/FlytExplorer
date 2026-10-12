@@ -663,7 +663,7 @@ public sealed partial class MainWindow : Window
                     if (firstMs < 0) firstMs = sw.ElapsedMilliseconds;
                     buf.Clear();
                     await Task.Yield();
-                    if (token.IsCancellationRequested) break;
+                    token.ThrowIfCancellationRequested();
                 }
             }
 
