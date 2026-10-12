@@ -8,18 +8,17 @@ Built with C# / .NET 10, WinUI 3 (Windows App SDK 2.5.1), and Everything IPC for
 | Requirement | Version |
 |---|---|
 | Windows 11 x64 | 22H2 or later (build 22621+) |
-| .NET 10 SDK | 10.0 or later |
-| Windows App SDK | 2.5.1 (installed via NuGet — no manual install needed) |
-| Visual Studio 2022 | 17.13+ with **Windows application development** workload |
+| .NET 10 Runtime | 10.0 or later |
+| Windows App SDK | 2.5.1 (auto-installed via NuGet on first build) |
 | Everything (optional) | 1.4 or 1.5, running, for Ctrl+K global search |
 
 ## Build
 
 ```powershell
-# Clone and build release x64
+# Clone and build
 git clone https://github.com/<org>/FlytExplorer.git
 cd FlytExplorer\FlytExplorer-Design-v1.0
-dotnet build -c Release -r win-x64
+dotnet build -c Release
 ```
 
 Run tests:
@@ -28,15 +27,27 @@ Run tests:
 dotnet test
 ```
 
-Expected output: 48 passed, 6 skipped (Everything-conditional), 0 failed.
+Expected output: 58 passed, 1 skipped (Everything IPC — requires running Everything), 0 failed.
 
 ## Run
 
 ```powershell
-dotnet run --project src\FlytExplorer.App -c Release -r win-x64
+# Debug
+dotnet run --project src\FlytExplorer.App
+
+# Or launch the built exe directly
+.\src\FlytExplorer.App\bin\Release\net10.0-windows10.0.22621.0\FlytExplorer.App.exe
 ```
 
-Or open `FlytExplorer.sln` in Visual Studio and press F5.
+Or open `FlytExplorer.slnx` in Visual Studio 2022 (17.13+) and press F5.
+
+## Release packaging
+
+```powershell
+dotnet publish src\FlytExplorer.App -c Release -r win-x64 --self-contained false
+```
+
+See `docs/PHASE_8.md` for MSIX packaging and code-signing instructions.
 
 ## Keyboard shortcuts
 
@@ -72,10 +83,6 @@ Flyt Explorer follows the Windows system Light / Dark setting automatically.
 - Everything must be installed and running for global search (Ctrl+K). If unavailable,
   the app falls back to folder-scoped browse without IPC.
 - Signed packaging (MSIX) is not yet provided; the app runs unpackaged.
-- Thumbnail loading covers the first 50 items after a folder load;
-  scroll-triggered loading is planned for a future release.
-- Title bar caption buttons (Min/Max/Close) retain Nordic Dark chrome regardless of OS
-  theme; this will be corrected in a future release.
 
 ## License
 

@@ -2,7 +2,33 @@
 
 All notable changes to FlytExplorer are documented here.
 
-## [Unreleased] — Phase 8
+## [0.9.1] — Launch crash fix
+
+### Fixed
+- **Win-x64 RID exe crash on startup**: Removed `<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>`
+  from `FlytExplorer.App.csproj`. The win-x64 RID apphost embeds a native bootstrapper (from
+  `WindowsAppSDK.Foundation 2.3.12`) that calls `MddBootstrapInitialize2` before .NET starts;
+  with only `WindowsAppRuntime 2.5.x` installed this fails with `E_INVALIDARG` in `combase.dll`.
+  The non-RID apphost has no embedded bootstrapper — `Bootstrap.Net.dll` handles initialization
+  correctly. `<Platforms>x64</Platforms>` is retained. Release packaging uses `dotnet publish -r win-x64`.
+
+---
+
+## [0.9.0] — Phase 9 — Keyboard shortcut completion
+
+### Added
+- **`Ctrl+L`** — Focus address bar and select all text (`FocusAddressBar`).
+- **`Alt+Left`** — Back navigation (`GoBack`).
+- **`Alt+Right`** — Forward navigation (`GoForward`).
+- **`Alt+Up`** — Navigate to parent folder (`GoUp`).
+
+All four shortcuts fire via the existing `WH_KEYBOARD` thread hook regardless of focused element.
+`GoBack`, `GoForward`, `GoUp` extracted from toolbar button handlers; buttons delegate to the
+same helpers. `alt && !ctrl` guard prevents accidental interception of AltGr key combinations.
+
+---
+
+## [0.8.0] — Phase 8 — Security review and release preparation
 
 ### Fixed
 - **Search scope query with spaces**: Paths containing spaces (e.g. `C:\Users\John Doe`) are now
@@ -14,9 +40,8 @@ All notable changes to FlytExplorer are documented here.
 
 ### Added
 - `LICENSE` — MIT licence file for GitHub public release.
-- `CHANGELOG.md` — this file.
 - `docs/PHASE_8.md` — security review findings, release checklist, MSIX packaging guide.
-- `EverythingSearchProvider.BuildQuery` — extracted as `internal static` for isolated unit tests.
+- `EverythingSearchProvider.BuildQuery` — extracted as `public static` for isolated unit tests.
 - 5 new unit tests covering `BuildQuery` (no Everything installation required).
 
 ---
@@ -48,7 +73,7 @@ All notable changes to FlytExplorer are documented here.
 - `DisplayName` `TextBlock` now has explicit `Foreground="{ThemeResource NordicTextPrimaryBrush}"`
   in both `FileEntryTemplate` and `SearchEntryTemplate` — was nearly invisible in light mode.
 - Thumbnail loading replaced 50-item cap with `ContainerContentChanging` progressive pattern;
-  thumbnails load on scroll, no limit.
+  thumbnails load on scroll with no item limit.
 
 ### Added
 - Title bar button (`NordicTitleBarXxx`) token brushes in both `NordicDark.xaml` and
