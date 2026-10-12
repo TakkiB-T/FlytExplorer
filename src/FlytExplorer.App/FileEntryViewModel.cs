@@ -1,4 +1,5 @@
-﻿using FlytExplorer.Core.Models;
+﻿using FlytExplorer.Core;
+using FlytExplorer.Core.Models;
 
 namespace FlytExplorer.App;
 
@@ -8,12 +9,11 @@ public sealed class FileEntryViewModel(FileEntry entry)
     public string FullPath       => entry.FullPath;
     public FileEntryKind Kind    => entry.Kind;
 
-    // Segoe MDL2 Assets glyphs — filled variants are more visible at small sizes
-    public string KindGlyph => entry.Kind switch
-    {
-        FileEntryKind.Directory => "\uED41",  // FolderFill (solid folder)
-        _                       => "\uE8A5"   // Document
-    };
+    private (string Glyph, string ColorHex) IconInfo =>
+        FileIconMapper.GetIconInfo(entry.Kind, Path.GetExtension(entry.FullPath));
+
+    public string IconGlyph    => IconInfo.Glyph;
+    public string IconColorHex => IconInfo.ColorHex;
 
     public string SizeDisplay => entry.SizeBytes switch
     {

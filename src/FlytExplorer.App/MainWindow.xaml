@@ -12,6 +12,7 @@
         <Grid.Resources>
 
             <local:KindToForegroundConverter x:Key="KindToForeground" />
+            <local:HexColorToBrushConverter x:Key="HexToBrush" />
 
             <Style x:Key="FileListItemStyle" TargetType="ListViewItem">
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -245,10 +246,10 @@
                         <ColumnDefinition Width="160" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0"
-                               Text="{Binding KindGlyph}"
+                               Text="{Binding IconGlyph}"
                                FontFamily="Segoe MDL2 Assets"
                                FontSize="18"
-                               Foreground="{Binding Kind, Converter={StaticResource KindToForeground}}"
+                               Foreground="{Binding IconColorHex, Converter={StaticResource HexToBrush}}"
                                VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1"
                                Text="{Binding DisplayName}"
@@ -281,10 +282,10 @@
                         <ColumnDefinition Width="130" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0"
-                               Text="{Binding KindGlyph}"
+                               Text="{Binding IconGlyph}"
                                FontFamily="Segoe MDL2 Assets"
                                FontSize="18"
-                               Foreground="{Binding Kind, Converter={StaticResource KindToForeground}}"
+                               Foreground="{Binding IconColorHex, Converter={StaticResource HexToBrush}}"
                                VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1"
                                Text="{Binding DisplayName}"
@@ -345,13 +346,17 @@
                         VerticalAlignment="Center"
                         Padding="6,0,4,0">
                 <Button x:Name="BackButton"    Tag="&#xE72B;" Style="{StaticResource TitleBarButtonStyle}"
-                        Width="36" Height="36" Click="BackButton_Click" ToolTipService.ToolTip="Back" />
+                        Width="36" Height="36" Click="BackButton_Click" ToolTipService.ToolTip="Back"
+                        AutomationProperties.Name="戻る" />
                 <Button x:Name="ForwardButton" Tag="&#xE72A;" Style="{StaticResource TitleBarButtonStyle}"
-                        Width="36" Height="36" Click="ForwardButton_Click" ToolTipService.ToolTip="Forward" />
+                        Width="36" Height="36" Click="ForwardButton_Click" ToolTipService.ToolTip="Forward"
+                        AutomationProperties.Name="進む" />
                 <Button x:Name="UpButton"      Tag="&#xE74A;" Style="{StaticResource TitleBarButtonStyle}"
-                        Width="36" Height="36" Click="UpButton_Click" ToolTipService.ToolTip="Up" />
+                        Width="36" Height="36" Click="UpButton_Click" ToolTipService.ToolTip="Up"
+                        AutomationProperties.Name="上のフォルダー" />
                 <Button x:Name="RefreshButton" Tag="&#xE72C;" Style="{StaticResource TitleBarButtonStyle}"
-                        Width="36" Height="36" Click="RefreshButton_Click" ToolTipService.ToolTip="Refresh" />
+                        Width="36" Height="36" Click="RefreshButton_Click" ToolTipService.ToolTip="Refresh"
+                        AutomationProperties.Name="更新" />
             </StackPanel>
 
             <!-- Address bar (also acts as drag region via SetTitleBar on ToolbarGrid) -->
@@ -363,6 +368,7 @@
                      Foreground="{StaticResource NordicTextPrimaryBrush}"
                      BorderBrush="{StaticResource NordicDividerBrush}"
                      FontFamily="Segoe UI Variable"
+                     AutomationProperties.Name="アドレスバー"
                      KeyDown="AddressBox_KeyDown" />
 
             <!-- Search area: scope badge + search box -->
@@ -389,6 +395,7 @@
                             CornerRadius="4"
                             VerticalAlignment="Center"
                             ToolTipService.ToolTip="検索スコープを切り替え (Ctrl+K=全体 / Ctrl+F=フォルダ)"
+                            AutomationProperties.Name="検索スコープ切り替え"
                             Click="SearchScopeBadge_Click" />
                 </Border>
 
@@ -400,6 +407,7 @@
                          Foreground="{StaticResource NordicTextPrimaryBrush}"
                          BorderBrush="{StaticResource NordicDividerBrush}"
                          FontFamily="Segoe UI Variable"
+                         AutomationProperties.Name="ファイルを検索"
                          TextChanged="SearchBox_TextChanged" />
             </Grid>
 
@@ -420,21 +428,24 @@
                         Style="{StaticResource TitleBarButtonStyle}"
                         Width="46" Height="52"
                         Click="MinimizeButton_Click"
-                        ToolTipService.ToolTip="Minimize" />
+                        ToolTipService.ToolTip="Minimize"
+                        AutomationProperties.Name="最小化" />
 
                 <Button x:Name="MaximizeButton"
                         Tag="&#xE922;"
                         Style="{StaticResource TitleBarButtonStyle}"
                         Width="46" Height="52"
                         Click="MaximizeButton_Click"
-                        ToolTipService.ToolTip="Maximize" />
+                        ToolTipService.ToolTip="Maximize"
+                        AutomationProperties.Name="最大化" />
 
                 <Button x:Name="CloseButton"
                         Tag="&#xE8BB;"
                         Style="{StaticResource TitleBarCloseStyle}"
                         Width="46" Height="52"
                         Click="CloseButton_Click"
-                        ToolTipService.ToolTip="Close" />
+                        ToolTipService.ToolTip="Close"
+                        AutomationProperties.Name="閉じる" />
             </StackPanel>
         </Grid>
 
@@ -556,6 +567,7 @@
                      Grid.Column="2"
                      Background="{StaticResource NordicBackgroundBrush}"
                      TabWidthMode="SizeToContent"
+                     AutomationProperties.Name="ファイルブラウザー"
                      TabCloseRequested="MainTabView_TabCloseRequested"
                      AddTabButtonClick="MainTabView_AddTabButtonClick"
                      SelectionChanged="MainTabView_SelectionChanged" />
