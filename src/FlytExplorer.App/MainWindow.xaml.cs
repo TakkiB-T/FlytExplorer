@@ -222,17 +222,17 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         (AppWindow.Presenter as OverlappedPresenter)?.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
-        ExtendsContentIntoTitleBar = true;
         var iconPath = Path.Combine(AppContext.BaseDirectory, "FlytExplorer.ico");
         if (File.Exists(iconPath)) AppWindow.SetIcon(iconPath);
         InitializeComponent();
-        SetTitleBar(ToolbarGrid);
         InstallKeyboardHook();
         Closed += (_, _) =>
         {
             if (_keyboardHook != IntPtr.Zero) { UnhookWindowsHookEx(_keyboardHook); _keyboardHook = IntPtr.Zero; }
         };
         AppWindow.Changed     += OnAppWindowChanged;
+        ToolbarGrid.Loaded      += (_, _) => UpdateDragRect();
+        ToolbarGrid.SizeChanged += (_, _) => UpdateDragRect();
         if (Content is FrameworkElement fe)
             fe.ActualThemeChanged += OnActualThemeChanged;
         ApplyNordicBorderColor();
@@ -252,6 +252,50 @@ public sealed partial class MainWindow : Window
             MaximizeButton.Tag = maximized ? "" : "";
             ToolTipService.SetToolTip(MaximizeButton, maximized ? "Restore" : "Maximize");
         });
+    }
+
+
+    // ── Drag region / DWM ─────────────────────────────────────────────────────
+
+    private RectInt32? GetRectInWindow(UIElement elem, double scale)
+    {
+        try
+        {
+            var t  = elem.TransformToVisual(null);
+            var pt = t.TransformPoint(new Windows.Foundation.Point(0, 0));
+            var fe = elem as FrameworkElement;
+            var w  = (int)((fe?.ActualWidth  ?? 0) * scale);
+            var h  = (int)((fe?.ActualHeight ?? 0) * scale);
+            if (w <= 0 || h <= 0) return null;
+            return new RectInt32((int)(pt.X * scale), (int)(pt.Y * scale), w, h);
+        }
+        catch { return null; }
+    }
+
+    private void UpdateDragRect()
+    {
+        if (ToolbarGrid.XamlRoot == null || ToolbarGrid.ActualWidth == 0) return;
+        var scale  = ToolbarGrid.XamlRoot.RasterizationScale;
+        var hwnd   = WindowNative.GetWindowHandle(this);
+        var wndId  = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+        var source = InputNonClientPointerSource.GetForWindowId(wndId);
+
+        // Caption = DragStrip + full ToolbarGrid row
+        var totalH = (int)((DragStrip.ActualHeight + ToolbarGrid.ActualHeight) * scale);
+        var totalW = (int)(ToolbarGrid.ActualWidth * scale);
+        source.SetRegionRects(NonClientRegionKind.Caption, [new RectInt32(0, 0, totalW, totalH)]);
+
+        // Passthrough = every interactive control in the toolbar
+        UIElement[] interactive = [
+            BackButton, ForwardButton, UpButton, RefreshButton, ShowHiddenButton,
+            AddressBox, SearchBox, SearchScopeBadge,
+            MinimizeButton, MaximizeButton, CloseButton];
+        var passthroughs = interactive
+            .Select(e => GetRectInWindow(e, scale))
+            .Where(r => r.HasValue)
+            .Select(r => r!.Value)
+            .ToArray();
+        source.SetRegionRects(NonClientRegionKind.Passthrough, passthroughs);
     }
 
     // ── Caption buttons ───────────────────────────────────────────────────
