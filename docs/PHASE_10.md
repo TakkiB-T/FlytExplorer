@@ -11,8 +11,9 @@ that require a real environment.
 ## Automated checks — PASSED
 
 ```
-dotnet build -c Release     → 0 errors, 0 warnings
-dotnet test                 → 58 passed, 1 skipped, 0 failed
+dotnet build -c Release                              → 0 errors, 0 warnings
+dotnet test                                          → 58 passed, 1 skipped, 0 failed
+dotnet publish -r win-x64 --self-contained false     → publish exe runs stably (verified PID 27632)
 ```
 
 ---
@@ -26,6 +27,7 @@ dotnet test                 → 58 passed, 1 skipped, 0 failed
 | `README.md` | Build commands corrected; known limitations current |
 | `THIRD_PARTY_NOTICES.md` | Windows App SDK, Everything SDK, xUnit, .NET, Segoe MDL2 |
 | `docs/PHASE_8.md` | Security review + MSIX packaging guide |
+| Publish output | App.xbf, MainWindow.xbf, Themes/*.xbf, FlytExplorer.App.pri all present |
 
 ---
 
