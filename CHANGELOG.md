@@ -2,6 +2,19 @@
 
 All notable changes to FlytExplorer are documented here.
 
+## [0.11.0] — Copy path, Open terminal, Selection size
+
+### Added
+- **「パスをコピー」** context menu item — copies the full path(s) of selected items to the
+  clipboard as plain text (newline-separated for multi-selection).
+- **「ターミナルで開く」** context menu item — opens Windows Terminal (`wt.exe`) at the selected
+  directory, or at the current folder if no directory is selected. Falls back to `cmd.exe` if
+  Windows Terminal is not installed.
+- **Selection total size** in the footer status bar — "5 件選択 (2.3 MB)" shows the combined
+  size of all selected files. Directories without a known size are excluded from the total.
+
+---
+
 ## [0.10.0] — Column sort
 
 ### Added

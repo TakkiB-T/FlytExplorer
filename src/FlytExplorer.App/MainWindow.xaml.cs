@@ -85,7 +85,8 @@ public sealed partial class MainWindow : Window
 
     private MenuFlyout?     _contextMenu;
     private MenuFlyoutItem? _menuOpen, _menuRename, _menuCopy, _menuCut,
-                            _menuPaste, _menuDelete, _menuNewFolder, _menuProperties;
+                            _menuPaste, _menuDelete, _menuNewFolder, _menuProperties,
+                            _menuCopyPath, _menuOpenTerminal;
 
     // ── DWM border colour ─────────────────────────────────────────────────
 
@@ -457,6 +458,9 @@ public sealed partial class MainWindow : Window
         _menuNewFolder = MakeMenuItem("新規フォルダ (Ctrl+Shift+N)",  "", MenuNewFolder_Click);
         _menuProperties = MakeMenuItem("プロパティ",              "", MenuProperties_Click);
 
+        _menuCopyPath     = MakeMenuItem("パスをコピー",        "", MenuCopyPath_Click);
+        _menuOpenTerminal = MakeMenuItem("ターミナルで開く",    "", MenuOpenTerminal_Click);
+
         _contextMenu = new MenuFlyout
         {
             MenuFlyoutPresenterStyle = (Style)WindowResources["NordicMenuFlyoutPresenterStyle"],
@@ -468,10 +472,12 @@ public sealed partial class MainWindow : Window
         _contextMenu.Items.Add(_menuCopy);
         _contextMenu.Items.Add(_menuCut);
         _contextMenu.Items.Add(_menuPaste);
+        _contextMenu.Items.Add(_menuCopyPath);
         _contextMenu.Items.Add(new MenuFlyoutSeparator());
         _contextMenu.Items.Add(_menuDelete);
         _contextMenu.Items.Add(new MenuFlyoutSeparator());
         _contextMenu.Items.Add(_menuNewFolder);
+        _contextMenu.Items.Add(_menuOpenTerminal);
         _contextMenu.Items.Add(new MenuFlyoutSeparator());
         _contextMenu.Items.Add(_menuProperties);
 
@@ -762,16 +768,23 @@ public sealed partial class MainWindow : Window
     private void UpdateSelectionStatus()
     {
         if (_tabs.Count == 0) return;
-        var count = GetActiveListView().SelectedItems.Count;
-        if (count == 0)
+        var selected = GetActiveListView().SelectedItems.OfType<FileEntryViewModel>().ToList();
+        if (selected.Count == 0)
         {
             SelectionText.Visibility = Visibility.Collapsed;
+            return;
         }
-        else
+        long totalBytes = selected.Sum(v => v.SizeBytes ?? 0L);
+        string sizeStr = totalBytes switch
         {
-            SelectionText.Text       = $"{count} 件選択";
-            SelectionText.Visibility = Visibility.Visible;
-        }
+            0                  => "",
+            < 1024             => $" ({totalBytes} B)",
+            < 1024 * 1024      => $" ({totalBytes / 1024.0:F1} KB)",
+            < 1024L * 1024 * 1024 => $" ({totalBytes / (1024.0 * 1024):F1} MB)",
+            _                  => $" ({totalBytes / (1024.0 * 1024 * 1024):F2} GB)",
+        };
+        SelectionText.Text       = $"{selected.Count} 件選択{sizeStr}";
+        SelectionText.Visibility = Visibility.Visible;
     }
 
     private void FileListView_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -873,12 +886,14 @@ public sealed partial class MainWindow : Window
         }
         catch { }
 
-        _menuOpen!.IsEnabled      = singleItem;
-        _menuRename!.IsEnabled    = singleItem;
-        _menuCopy!.IsEnabled      = hasSelection;
-        _menuCut!.IsEnabled       = hasSelection;
-        _menuPaste!.IsEnabled     = hasClipboard;
-        _menuDelete!.IsEnabled    = hasSelection;
+        _menuOpen!.IsEnabled         = singleItem;
+        _menuRename!.IsEnabled       = singleItem;
+        _menuCopy!.IsEnabled         = hasSelection;
+        _menuCut!.IsEnabled          = hasSelection;
+        _menuPaste!.IsEnabled        = hasClipboard;
+        _menuCopyPath!.IsEnabled     = hasSelection;
+        _menuDelete!.IsEnabled       = hasSelection;
+        _menuOpenTerminal!.IsEnabled = true;
     }
 
     private void MenuOpen_Click(object sender, RoutedEventArgs e)
@@ -896,6 +911,46 @@ public sealed partial class MainWindow : Window
     private void MenuDelete_Click(object sender, RoutedEventArgs e)    => _ = DeleteSelectedAsync(permanent: false);
     private void MenuNewFolder_Click(object sender, RoutedEventArgs e)  => _ = NewFolderAsync();
     private void MenuProperties_Click(object sender, RoutedEventArgs e) => _ = ShowPropertiesAsync();
+
+    private void MenuCopyPath_Click(object sender, RoutedEventArgs e)
+    {
+        var paths = GetActiveListView().SelectedItems
+            .OfType<FileEntryViewModel>()
+            .Select(v => v.FullPath);
+        var dp = new DataPackage();
+        dp.SetText(string.Join(Environment.NewLine, paths));
+        Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dp);
+    }
+
+    private void MenuOpenTerminal_Click(object sender, RoutedEventArgs e)
+    {
+        var lv     = GetActiveListView();
+        var folder = lv.SelectedItem is FileEntryViewModel { Kind: Core.Models.FileEntryKind.Directory } dir
+            ? dir.FullPath
+            : ActiveTab.CurrentPath;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName         = "wt.exe",
+                Arguments        = $"-d \"{folder}\"",
+                UseShellExecute  = true,
+            });
+        }
+        catch
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName         = "cmd.exe",
+                    UseShellExecute  = true,
+                    WorkingDirectory = folder,
+                });
+            }
+            catch { }
+        }
+    }
 
     // ── File operations ───────────────────────────────────────────────────
 
