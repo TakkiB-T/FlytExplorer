@@ -708,8 +708,8 @@ public sealed partial class MainWindow : Window
 
         if (args.Phase == 0 && vm.ThumbnailBitmap == null)
             args.RegisterUpdateCallback(ListView_ContainerContentChanging_Thumbnail);
-
-        args.Handled = true;
+        // Do NOT set args.Handled = true — it suppresses {Binding} data template
+        // application in Release builds, causing all items to render blank.
     }
 
     private async void ListView_ContainerContentChanging_Thumbnail(
