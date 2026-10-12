@@ -104,8 +104,12 @@ Steps (adjust display scale in Settings → System → Display):
 
 ## Definition of Done
 
-- [ ] Automated tests: 0 failures.
-- [ ] Clean-machine test: app launches, basic navigation works, no missing runtime error.
-- [ ] Everything 1.4 and 1.5: search returns correct results, unavailable state is graceful.
-- [ ] 150% DPI: no clipped or overlapping UI elements.
-- [ ] Trademark check for "FlytExplorer" name completed (external — see ARCHITECTURE.md §7).
+- [x] Automated tests: 58 passed, 1 skipped (correct), 0 failed.
+- [x] Everything 1.4.1 (1.4.1.1028): all IPC tests pass — GetHealth, Search, Paging, Latency, FolderScope, GenerationTracking.
+- [x] DPI 125%: PerMonitorV2 awareness confirmed; `RasterizationScale` used for drag region.
+- [x] App icon: 4-resolution ICO (16/32/48/256 px), Nordic Dark palette.
+- [x] Publish package: `dotnet publish -r win-x64` produces working `FlytExplorer-v0.9.3-win-x64.zip`.
+- [ ] Clean-machine test: app launches on fresh Windows 11 without dev tools — **pending**.
+- [ ] Everything 1.5.x: search returns correct results — **pending** (install 1.5 beta to test).
+- [ ] 150%+ DPI: visual verification on 150%/200% display scale — **pending**.
+- [ ] Trademark check for "FlytExplorer" name — **pending** (external).
