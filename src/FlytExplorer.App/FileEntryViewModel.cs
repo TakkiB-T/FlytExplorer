@@ -32,6 +32,9 @@ public sealed class FileEntryViewModel(FileEntry entry) : INotifyPropertyChanged
 
     public long?           SizeBytes    => entry.SizeBytes;
     public DateTimeOffset? DateModified => entry.DateModified;
+    public string          Extension    => entry.Kind == FileEntryKind.Directory
+        ? ""
+        : Path.GetExtension(entry.FullPath).TrimStart('.').ToUpperInvariant();
 
     public string SizeDisplay => entry.SizeBytes switch
     {

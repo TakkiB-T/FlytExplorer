@@ -2,6 +2,21 @@
 
 All notable changes to FlytExplorer are documented here.
 
+## [0.14.0] — Folder size in Properties, Extension column and sort
+
+### Added
+- **Folder size calculation** in Properties dialog — directories initially show "計算中..."
+  while a background `Task` recursively sums `FileInfo.Length` for all files. The size
+  label updates in-place when calculation completes; the task is cancelled if the dialog
+  is closed before it finishes. Uses `EnumerationOptions { IgnoreInaccessible = true }`.
+- **Extension column** in the file list — new "Ext" column (60 px) between Name and Size
+  shows the file extension in uppercase (e.g. `CS`, `TXT`). Directories show nothing.
+- **Sort by Extension** — "Ext ↑/↓" header button sorts files by extension (then by name
+  within the same extension). Directories still sort first.
+- `FileEntryViewModel.Extension` property — `Path.GetExtension` trimmed and uppercased.
+
+---
+
 ## [0.13.0] — Hidden files toggle, Open in Explorer
 
 ### Added

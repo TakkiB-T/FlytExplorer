@@ -26,7 +26,7 @@ public sealed partial class MainWindow : Window
 {
     // ── Per-tab state ─────────────────────────────────────────────────────
 
-    private enum SortColumn { Name, Size, Date }
+    private enum SortColumn { Name, Ext, Size, Date }
 
     private sealed class TabData
     {
@@ -510,14 +510,16 @@ public sealed partial class MainWindow : Window
         header.Background = Brush("NordicSurfaceBrush");
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(160) });
 
-        TextBlock? nameHdr = null, sizeHdr = null, dateHdr = null;
+        TextBlock? nameHdr = null, extHdr = null, sizeHdr = null, dateHdr = null;
 
         void UpdateIndicators()
         {
             if (nameHdr != null) nameHdr.Text = "Name"          + (tab.SortColumn == SortColumn.Name ? (tab.SortAscending ? " ↑" : " ↓") : "");
+            if (extHdr  != null) extHdr.Text  = "Ext"           + (tab.SortColumn == SortColumn.Ext  ? (tab.SortAscending ? " ↑" : " ↓") : "");
             if (sizeHdr != null) sizeHdr.Text = "Size"          + (tab.SortColumn == SortColumn.Size ? (tab.SortAscending ? " ↑" : " ↓") : "");
             if (dateHdr != null) dateHdr.Text = "Date modified" + (tab.SortColumn == SortColumn.Date ? (tab.SortAscending ? " ↑" : " ↓") : "");
         }
@@ -549,8 +551,9 @@ public sealed partial class MainWindow : Window
         }
 
         nameHdr = AddHdr("Name",          SortColumn.Name, 1, HorizontalAlignment.Left,  new Thickness(0));
-        sizeHdr = AddHdr("Size",          SortColumn.Size, 2, HorizontalAlignment.Right, new Thickness(0));
-        dateHdr = AddHdr("Date modified", SortColumn.Date, 3, HorizontalAlignment.Left,  new Thickness(8, 0, 0, 0));
+        extHdr  = AddHdr("Ext",           SortColumn.Ext,  2, HorizontalAlignment.Left,  new Thickness(4, 0, 0, 0));
+        sizeHdr = AddHdr("Size",          SortColumn.Size, 3, HorizontalAlignment.Right, new Thickness(0));
+        dateHdr = AddHdr("Date modified", SortColumn.Date, 4, HorizontalAlignment.Left,  new Thickness(8, 0, 0, 0));
         return header;
     }
 
@@ -561,6 +564,10 @@ public sealed partial class MainWindow : Window
         {
             (SortColumn.Name, true)  => dirs.ThenBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase),
             (SortColumn.Name, false) => dirs.ThenByDescending(x => x.DisplayName, StringComparer.OrdinalIgnoreCase),
+            (SortColumn.Ext,  true)  => dirs.ThenBy(x => x.Extension, StringComparer.OrdinalIgnoreCase)
+                                            .ThenBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase),
+            (SortColumn.Ext,  false) => dirs.ThenByDescending(x => x.Extension, StringComparer.OrdinalIgnoreCase)
+                                            .ThenBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase),
             (SortColumn.Size, true)  => dirs.ThenBy(x => x.SizeBytes ?? long.MinValue),
             (SortColumn.Size, false) => dirs.ThenByDescending(x => x.SizeBytes ?? long.MinValue),
             (SortColumn.Date, true)  => dirs.ThenBy(x => x.DateModified),
@@ -1215,26 +1222,13 @@ public sealed partial class MainWindow : Window
         var lv = GetActiveListView();
         if (lv.SelectedItem is not FileEntryViewModel vm) return;
 
-        var info = new FileInfo(vm.FullPath);
-        var isDir = vm.Kind == Core.Models.FileEntryKind.Directory;
-        string sizeText;
-        if (isDir)
-        {
-            sizeText = "—";
-        }
-        else
-        {
-            sizeText = info.Exists
-                ? info.Length >= 1_048_576
-                    ? $"{info.Length / 1_048_576.0:F1} MB  ({info.Length:N0} bytes)"
-                    : info.Length >= 1024
-                        ? $"{info.Length / 1024.0:F1} KB  ({info.Length:N0} bytes)"
-                        : $"{info.Length:N0} bytes"
-                : "—";
-        }
+        var dirInfo  = vm.Kind == Core.Models.FileEntryKind.Directory ? new DirectoryInfo(vm.FullPath) : null;
+        var fileInfo = dirInfo == null ? new FileInfo(vm.FullPath) : null;
+        bool isDir   = dirInfo != null;
+        bool exists  = isDir ? dirInfo!.Exists : fileInfo!.Exists;
 
-        var panel = new StackPanel { Spacing = 6, MinWidth = 340 };
-        void AddRow(string label, string value)
+        var panel = new StackPanel { Spacing = 6, MinWidth = 360 };
+        TextBlock AddRow(string label, string value)
         {
             var row = new Grid();
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
@@ -1245,18 +1239,34 @@ public sealed partial class MainWindow : Window
             row.Children.Add(lbl);
             row.Children.Add(val);
             panel.Children.Add(row);
+            return val;
         }
+
+        string initialSize = isDir
+            ? "計算中..."
+            : !exists ? "—"
+            : fileInfo!.Length >= 1_073_741_824
+                ? $"{fileInfo.Length / 1_073_741_824.0:F2} GB  ({fileInfo.Length:N0} bytes)"
+                : fileInfo.Length >= 1_048_576
+                    ? $"{fileInfo.Length / 1_048_576.0:F1} MB  ({fileInfo.Length:N0} bytes)"
+                    : fileInfo.Length >= 1024
+                        ? $"{fileInfo.Length / 1024.0:F1} KB  ({fileInfo.Length:N0} bytes)"
+                        : $"{fileInfo.Length:N0} bytes";
 
         AddRow("名前",          vm.DisplayName);
         AddRow("場所",          Path.GetDirectoryName(vm.FullPath) ?? "");
         AddRow("種類",          isDir ? "フォルダ" : (Path.GetExtension(vm.FullPath).TrimStart('.').ToUpperInvariant() + " ファイル"));
-        AddRow("サイズ",        sizeText);
-        AddRow("作成日時",      (info.Exists ? info.CreationTime.ToString("yyyy/MM/dd HH:mm:ss") : "—"));
-        AddRow("更新日時",      (info.Exists ? info.LastWriteTime.ToString("yyyy/MM/dd HH:mm:ss") : "—"));
-        AddRow("アクセス日時",  (info.Exists ? info.LastAccessTime.ToString("yyyy/MM/dd HH:mm:ss") : "—"));
-        if (!isDir && info.Exists)
-            AddRow("属性", info.Attributes.ToString());
+        var sizeBlock = AddRow("サイズ", initialSize);
+        var created   = isDir ? dirInfo!.CreationTime  : fileInfo!.CreationTime;
+        var modified  = isDir ? dirInfo!.LastWriteTime : fileInfo!.LastWriteTime;
+        var accessed  = isDir ? dirInfo!.LastAccessTime: fileInfo!.LastAccessTime;
+        AddRow("作成日時",     exists ? created.ToString("yyyy/MM/dd HH:mm:ss") : "—");
+        AddRow("更新日時",     exists ? modified.ToString("yyyy/MM/dd HH:mm:ss") : "—");
+        AddRow("アクセス日時", exists ? accessed.ToString("yyyy/MM/dd HH:mm:ss") : "—");
+        if (!isDir && exists)
+            AddRow("属性", fileInfo!.Attributes.ToString());
 
+        using var cts = new CancellationTokenSource();
         var dialog = new ContentDialog
         {
             Title           = "プロパティ",
@@ -1264,7 +1274,42 @@ public sealed partial class MainWindow : Window
             CloseButtonText = "閉じる",
             XamlRoot        = this.Content.XamlRoot,
         };
+        dialog.Closed += (_, _) => cts.Cancel();
+
+        if (isDir && exists)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    long total = 0;
+                    var opts = new EnumerationOptions
+                    {
+                        IgnoreInaccessible    = true,
+                        RecurseSubdirectories = true,
+                        AttributesToSkip      = 0,
+                    };
+                    foreach (var fi in dirInfo!.EnumerateFiles("*", opts))
+                    {
+                        cts.Token.ThrowIfCancellationRequested();
+                        total += fi.Length;
+                    }
+                    string result = total >= 1_073_741_824
+                        ? $"{total / 1_073_741_824.0:F2} GB  ({total:N0} bytes)"
+                        : total >= 1_048_576
+                            ? $"{total / 1_048_576.0:F1} MB  ({total:N0} bytes)"
+                            : total >= 1024
+                                ? $"{total / 1024.0:F1} KB  ({total:N0} bytes)"
+                                : $"{total:N0} bytes";
+                    DispatcherQueue.TryEnqueue(() => sizeBlock.Text = result);
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception ex) { DispatcherQueue.TryEnqueue(() => sizeBlock.Text = $"エラー: {ex.Message}"); }
+            }, cts.Token);
+        }
+
         await dialog.ShowAsync();
+        cts.Cancel();
     }
 
     // ── Drag and drop ────────────────────────────────────────────────────

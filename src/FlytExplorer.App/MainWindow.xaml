@@ -251,7 +251,8 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="32" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="60" />
+                        <ColumnDefinition Width="90" />
                         <ColumnDefinition Width="160" />
                     </Grid.ColumnDefinitions>
                     <!-- Icon column: glyph always present; thumbnail overlays it when loaded -->
@@ -273,12 +274,18 @@
                                VerticalAlignment="Center"
                                FontSize="13" />
                     <TextBlock Grid.Column="2"
+                               Text="{Binding Extension}"
+                               Foreground="{ThemeResource NordicTextMutedBrush}"
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               Margin="4,0,0,0" />
+                    <TextBlock Grid.Column="3"
                                Text="{Binding SizeDisplay}"
                                HorizontalAlignment="Right"
                                Foreground="{ThemeResource NordicTextMutedBrush}"
                                VerticalAlignment="Center"
                                FontSize="12" />
-                    <TextBlock Grid.Column="3"
+                    <TextBlock Grid.Column="4"
                                Text="{Binding DateModifiedDisplay}"
                                Foreground="{ThemeResource NordicTextMutedBrush}"
                                Margin="8,0,0,0"
