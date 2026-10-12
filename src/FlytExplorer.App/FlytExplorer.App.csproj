@@ -32,4 +32,16 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <!-- dotnet publish does not copy WinUI 3 compiled XAML (.xbf) or resource index (.pri).
+       Copy them from the RID build output so the published exe can load XAML at runtime. -->
+  <Target Name="CopyWinUIResourcesOnPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_WinUIResources Include="$(OutDir)**\*.xbf" />
+      <_WinUIResources Include="$(OutDir)*.pri" />
+    </ItemGroup>
+    <MakeDir Directories="$(PublishDir)Themes" />
+    <Copy SourceFiles="@(_WinUIResources)"
+          DestinationFolder="$(PublishDir)%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>
