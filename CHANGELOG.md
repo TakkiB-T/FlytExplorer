@@ -2,6 +2,15 @@
 
 All notable changes to FlytExplorer are documented here.
 
+## [0.9.3] — App icon
+
+### Added
+- `FlytExplorer.ico` — 4-resolution ICO (16/32/48/256 px). Nordic Dark background (#181F24),
+  bold 'F' glyph in Nordic Accent teal (#72B8C4). Embedded via `<ApplicationIcon>` in csproj
+  and set at runtime with `AppWindow.SetIcon()`.
+
+---
+
 ## [0.9.2] — Publish package fix
 
 ### Fixed

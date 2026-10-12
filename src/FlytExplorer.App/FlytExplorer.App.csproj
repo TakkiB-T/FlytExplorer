@@ -29,6 +29,9 @@
     <ProjectReference Include="..\FlytExplorer.Shell\FlytExplorer.Shell.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="FlytExplorer.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\..\lib\Everything\Everything64.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
