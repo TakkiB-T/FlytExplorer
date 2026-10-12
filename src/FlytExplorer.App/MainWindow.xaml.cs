@@ -64,6 +64,14 @@ public sealed partial class MainWindow : Window
 
     // ── Search state (per window, applies to active tab) ──────────────────
 
+    private enum SearchScope { Global, CurrentFolder }
+    private SearchScope _searchScope   = SearchScope.Global;
+    private uint        _searchOffset;
+    private uint        _searchTotalCount;
+    private string      _searchLastText = string.Empty;
+    private bool        _inSearchMode;
+    private const uint  SearchPageSize  = 200;
+
     private CancellationTokenSource? _searchCts;
     private int _searchGeneration;
 
@@ -109,8 +117,10 @@ public sealed partial class MainWindow : Window
             {
                 switch (wParam.ToInt32())
                 {
-                    case 0x54: DispatcherQueue.TryEnqueue(AddTab);                          break; // T
-                    case 0x57: DispatcherQueue.TryEnqueue(() => CloseTab(_activeTabIndex)); break; // W
+                    case 0x54: DispatcherQueue.TryEnqueue(() => AddTab());                                           break; // T
+                    case 0x57: DispatcherQueue.TryEnqueue(() => CloseTab(_activeTabIndex));                      break; // W
+                    case 0x4B: DispatcherQueue.TryEnqueue(() => ActivateSearch(SearchScope.Global));             break; // K
+                    case 0x46: DispatcherQueue.TryEnqueue(() => ActivateSearch(SearchScope.CurrentFolder));      break; // F
                 }
             }
         }
@@ -511,6 +521,7 @@ public sealed partial class MainWindow : Window
                 : $"{count} items  (first {firstMs} ms · total {sw.ElapsedMilliseconds} ms)";
             tab.Empty.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
             UpdateActiveTabHeader();
+            ExitSearchMode();
         }
         catch (OperationCanceledException) { }
         catch (UnauthorizedAccessException ex) { StatusText.Text = $"アクセス拒否: {ex.Message}"; }
@@ -982,6 +993,109 @@ public sealed partial class MainWindow : Window
 
     // ── Search ────────────────────────────────────────────────────────────
 
+    private void ActivateSearch(SearchScope scope)
+    {
+        _searchScope  = scope;
+        _searchOffset = 0;
+        UpdateScopeBadge();
+        SearchBox.Focus(FocusState.Keyboard);
+        SearchBox.SelectAll();
+        if (!string.IsNullOrWhiteSpace(SearchBox.Text))
+            _ = SearchAsync(SearchBox.Text, 0);
+    }
+
+    private void UpdateScopeBadge()
+    {
+        if (_searchScope == SearchScope.CurrentFolder)
+        {
+            var folderName = Path.GetFileName(ActiveTab.CurrentPath.TrimEnd('\\', '/'));
+            SearchScopeBadge.Content = string.IsNullOrEmpty(folderName) ? "フォルダ" : folderName;
+        }
+        else
+        {
+            SearchScopeBadge.Content = "すべて";
+        }
+    }
+
+    private void SearchScopeBadge_Click(object sender, RoutedEventArgs e)
+    {
+        _searchScope  = _searchScope == SearchScope.Global ? SearchScope.CurrentFolder : SearchScope.Global;
+        _searchOffset = 0;
+        UpdateScopeBadge();
+        if (!string.IsNullOrWhiteSpace(SearchBox.Text))
+            _ = SearchAsync(SearchBox.Text, 0);
+    }
+
+    private void SearchPrevButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_searchOffset >= SearchPageSize)
+            _ = SearchAsync(_searchLastText, _searchOffset - SearchPageSize);
+    }
+
+    private void SearchNextButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_searchOffset + SearchPageSize < _searchTotalCount)
+            _ = SearchAsync(_searchLastText, _searchOffset + SearchPageSize);
+    }
+
+    private void EnterSearchMode()
+    {
+        if (_inSearchMode) return;
+        _inSearchMode = true;
+        var lv = ActiveTab.ListView;
+        lv.ItemTemplate = (DataTemplate)WindowResources["SearchEntryTemplate"];
+        lv.Header = BuildSearchListHeader();
+        SearchPagination.Visibility = Visibility.Visible;
+    }
+
+    private void ExitSearchMode()
+    {
+        if (!_inSearchMode) return;
+        _inSearchMode     = false;
+        _searchOffset     = 0;
+        _searchTotalCount = 0;
+        _searchLastText   = string.Empty;
+        var lv = ActiveTab.ListView;
+        lv.ItemTemplate = (DataTemplate)WindowResources["FileEntryTemplate"];
+        lv.Header = BuildListHeader();
+        SearchPagination.Visibility = Visibility.Collapsed;
+    }
+
+    private UIElement BuildSearchListHeader()
+    {
+        static SolidColorBrush Brush(string key) =>
+            (SolidColorBrush)Application.Current.Resources[key];
+
+        var header = new Grid { Padding = new Thickness(8, 6, 8, 6) };
+        header.Background = Brush("NordicSurfaceBrush");
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 120 });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(180) });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(130) });
+
+        void AddHdr(string text, int col, HorizontalAlignment ha, Thickness margin)
+        {
+            var tb = new TextBlock
+            {
+                Text                = text,
+                Foreground          = Brush("NordicTextMutedBrush"),
+                FontSize            = 12,
+                FontWeight          = Microsoft.UI.Text.FontWeights.SemiBold,
+                HorizontalAlignment = ha,
+                Margin              = margin,
+            };
+            Grid.SetColumn(tb, col);
+            header.Children.Add(tb);
+        }
+
+        AddHdr("名前",    1, HorizontalAlignment.Left,  new Thickness(0));
+        AddHdr("場所",    2, HorizontalAlignment.Left,  new Thickness(8, 0, 0, 0));
+        AddHdr("サイズ",  3, HorizontalAlignment.Right, new Thickness(0));
+        AddHdr("更新日時", 4, HorizontalAlignment.Left,  new Thickness(8, 0, 0, 0));
+        return header;
+    }
+
     private void SearchBox_TextChanged(object sender, Microsoft.UI.Xaml.Controls.TextChangedEventArgs e)
     {
         var text = SearchBox.Text;
@@ -990,10 +1104,11 @@ public sealed partial class MainWindow : Window
             _ = NavigateToAsync(ActiveTab.CurrentPath);
             return;
         }
-        _ = SearchAsync(text);
+        _searchOffset = 0;
+        _ = SearchAsync(text, 0);
     }
 
-    private async Task SearchAsync(string text)
+    private async Task SearchAsync(string text, uint offset)
     {
         _searchCts?.Cancel();
         _searchCts = new CancellationTokenSource();
@@ -1014,12 +1129,14 @@ public sealed partial class MainWindow : Window
         tab.Items.Clear();
         tab.Loading.IsActive = true;
         StatusText.Text      = "検索中…";
+        EnterSearchMode();
 
         try
         {
-            var sw   = System.Diagnostics.Stopwatch.StartNew();
-            var page = await _searchProvider.SearchAsync(
-                new Core.Models.SearchRequest(text, null, 0, 200, generation),
+            var scopePath = _searchScope == SearchScope.CurrentFolder ? tab.CurrentPath : null;
+            var sw        = System.Diagnostics.Stopwatch.StartNew();
+            var page      = await _searchProvider.SearchAsync(
+                new Core.Models.SearchRequest(text, scopePath, offset, SearchPageSize, generation),
                 cts.Token);
 
             if (generation != _searchGeneration) return;
@@ -1028,6 +1145,16 @@ public sealed partial class MainWindow : Window
                 tab.Items.Add(new FileEntryViewModel(entry));
 
             sw.Stop();
+            _searchOffset     = offset;
+            _searchTotalCount = page.TotalCount;
+            _searchLastText   = text;
+
+            var currentPage = offset / SearchPageSize + 1;
+            var totalPages  = Math.Max(1, (int)Math.Ceiling(page.TotalCount / (double)SearchPageSize));
+            SearchPageLabel.Text     = $"{currentPage} / {totalPages}";
+            SearchPrevButton.IsEnabled = offset > 0;
+            SearchNextButton.IsEnabled = offset + SearchPageSize < page.TotalCount;
+
             StatusText.Text = $"{page.Items.Count} / {page.TotalCount} 件  ({sw.ElapsedMilliseconds} ms)";
         }
         catch (EverythingUnavailableException ex) { StatusText.Text = $"Everything 利用不可: {ex.Message}"; }

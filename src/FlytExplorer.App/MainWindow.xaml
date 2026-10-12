@@ -235,7 +235,7 @@
                 </Setter>
             </Style>
 
-            <!-- File-entry DataTemplate shared across all tab ListViews -->
+            <!-- File-entry DataTemplate shared across all tab ListViews (browse mode) -->
             <DataTemplate x:Key="FileEntryTemplate">
                 <Grid Padding="8,4" MinHeight="28">
                     <Grid.ColumnDefinitions>
@@ -262,6 +262,49 @@
                                VerticalAlignment="Center"
                                FontSize="12" />
                     <TextBlock Grid.Column="3"
+                               Text="{Binding DateModifiedDisplay}"
+                               Foreground="{StaticResource NordicTextMutedBrush}"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center"
+                               FontSize="12" />
+                </Grid>
+            </DataTemplate>
+
+            <!-- Search-result DataTemplate — adds parent path column -->
+            <DataTemplate x:Key="SearchEntryTemplate">
+                <Grid Padding="8,4" MinHeight="28">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="32" />
+                        <ColumnDefinition Width="*" MinWidth="120" />
+                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="80" />
+                        <ColumnDefinition Width="130" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding KindGlyph}"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="18"
+                               Foreground="{Binding Kind, Converter={StaticResource KindToForeground}}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding DisplayName}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"
+                               FontSize="13" />
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding ParentPath}"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{StaticResource NordicTextMutedBrush}"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center"
+                               FontSize="12" />
+                    <TextBlock Grid.Column="3"
+                               Text="{Binding SizeDisplay}"
+                               HorizontalAlignment="Right"
+                               Foreground="{StaticResource NordicTextMutedBrush}"
+                               VerticalAlignment="Center"
+                               FontSize="12" />
+                    <TextBlock Grid.Column="4"
                                Text="{Binding DateModifiedDisplay}"
                                Foreground="{StaticResource NordicTextMutedBrush}"
                                Margin="8,0,0,0"
@@ -322,17 +365,43 @@
                      FontFamily="Segoe UI Variable"
                      KeyDown="AddressBox_KeyDown" />
 
-            <!-- Search box -->
-            <TextBox x:Name="SearchBox"
-                     Grid.Column="2"
-                     PlaceholderText="Search (Ctrl+K)"
-                     VerticalAlignment="Center"
-                     Margin="0,0,4,0"
-                     Background="{StaticResource NordicSidebarBrush}"
-                     Foreground="{StaticResource NordicTextPrimaryBrush}"
-                     BorderBrush="{StaticResource NordicDividerBrush}"
-                     FontFamily="Segoe UI Variable"
-                     TextChanged="SearchBox_TextChanged" />
+            <!-- Search area: scope badge + search box -->
+            <Grid Grid.Column="2" Margin="0,0,4,0" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Scope toggle badge -->
+                <Border Grid.Column="0"
+                        Background="{StaticResource NordicHoverBrush}"
+                        CornerRadius="4"
+                        Margin="0,0,3,0"
+                        Padding="0">
+                    <Button x:Name="SearchScopeBadge"
+                            Content="すべて"
+                            FontSize="11"
+                            Height="26"
+                            Padding="7,2"
+                            Background="Transparent"
+                            Foreground="{StaticResource NordicTextMutedBrush}"
+                            BorderThickness="0"
+                            CornerRadius="4"
+                            VerticalAlignment="Center"
+                            ToolTipService.ToolTip="検索スコープを切り替え (Ctrl+K=全体 / Ctrl+F=フォルダ)"
+                            Click="SearchScopeBadge_Click" />
+                </Border>
+
+                <TextBox x:Name="SearchBox"
+                         Grid.Column="1"
+                         PlaceholderText="検索 (Ctrl+K)"
+                         VerticalAlignment="Center"
+                         Background="{StaticResource NordicSidebarBrush}"
+                         Foreground="{StaticResource NordicTextPrimaryBrush}"
+                         BorderBrush="{StaticResource NordicDividerBrush}"
+                         FontFamily="Segoe UI Variable"
+                         TextChanged="SearchBox_TextChanged" />
+            </Grid>
 
             <!-- Toolbar bottom border — hidden because toolbar and tab strip share the same background -->
             <Border Grid.Column="0" Grid.ColumnSpan="4"
@@ -477,6 +546,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock x:Name="StatusText"
                        Grid.Column="0"
@@ -485,8 +555,43 @@
                        Foreground="{StaticResource NordicTextMutedBrush}"
                        FontFamily="Segoe UI Variable"
                        FontSize="12" />
+
+            <!-- Search pagination (visible only in search mode) -->
+            <StackPanel x:Name="SearchPagination"
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="4"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed"
+                        Margin="8,0">
+                <Button x:Name="SearchPrevButton"
+                        Content="‹"
+                        FontSize="14"
+                        Width="24" Height="20"
+                        Padding="0"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        IsEnabled="False"
+                        Click="SearchPrevButton_Click" />
+                <TextBlock x:Name="SearchPageLabel"
+                           Text="1 / 1"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource NordicTextMutedBrush}"
+                           FontFamily="Segoe UI Variable"
+                           FontSize="12" />
+                <Button x:Name="SearchNextButton"
+                        Content="›"
+                        FontSize="14"
+                        Width="24" Height="20"
+                        Padding="0"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        IsEnabled="False"
+                        Click="SearchNextButton_Click" />
+            </StackPanel>
+
             <TextBlock x:Name="SelectionText"
-                       Grid.Column="1"
+                       Grid.Column="2"
                        Visibility="Collapsed"
                        VerticalAlignment="Center"
                        Foreground="{StaticResource NordicAccentBrush}"

@@ -26,4 +26,6 @@ public sealed class FileEntryViewModel(FileEntry entry)
 
     public string DateModifiedDisplay =>
         entry.DateModified?.LocalDateTime.ToString("yyyy/MM/dd  HH:mm") ?? "";
+
+    public string ParentPath => Path.GetDirectoryName(entry.FullPath) ?? "";
 }
