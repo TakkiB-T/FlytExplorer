@@ -222,17 +222,17 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         (AppWindow.Presenter as OverlappedPresenter)?.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
+        ExtendsContentIntoTitleBar = true;
         var iconPath = Path.Combine(AppContext.BaseDirectory, "FlytExplorer.ico");
         if (File.Exists(iconPath)) AppWindow.SetIcon(iconPath);
         InitializeComponent();
+        SetTitleBar(ToolbarGrid);
         InstallKeyboardHook();
         Closed += (_, _) =>
         {
             if (_keyboardHook != IntPtr.Zero) { UnhookWindowsHookEx(_keyboardHook); _keyboardHook = IntPtr.Zero; }
         };
         AppWindow.Changed     += OnAppWindowChanged;
-        DragStrip.Loaded      += (_, _) => UpdateDragRect();
-        DragStrip.SizeChanged += (_, _) => UpdateDragRect();
         if (Content is FrameworkElement fe)
             fe.ActualThemeChanged += OnActualThemeChanged;
         ApplyNordicBorderColor();
@@ -241,19 +241,6 @@ public sealed partial class MainWindow : Window
 
     // ── Drag region / DWM ─────────────────────────────────────────────────
 
-    private void UpdateDragRect()
-    {
-        var root = DragStrip.XamlRoot;
-        if (root == null || DragStrip.ActualWidth == 0) return;
-        var scale = root.RasterizationScale;
-        var hwnd  = WindowNative.GetWindowHandle(this);
-        var wndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-        InputNonClientPointerSource.GetForWindowId(wndId).SetRegionRects(
-            NonClientRegionKind.Caption,
-            [new RectInt32(0, 0,
-                (int)(DragStrip.ActualWidth  * scale),
-                (int)(DragStrip.ActualHeight * scale))]);
-    }
 
     private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
     {
