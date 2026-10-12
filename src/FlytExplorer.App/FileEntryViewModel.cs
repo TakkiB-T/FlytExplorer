@@ -1,19 +1,34 @@
-﻿using FlytExplorer.Core;
+using System.ComponentModel;
+using FlytExplorer.Core;
 using FlytExplorer.Core.Models;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace FlytExplorer.App;
 
-public sealed class FileEntryViewModel(FileEntry entry)
+public sealed class FileEntryViewModel(FileEntry entry) : INotifyPropertyChanged
 {
-    public string DisplayName    => entry.DisplayName;
-    public string FullPath       => entry.FullPath;
-    public FileEntryKind Kind    => entry.Kind;
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public string DisplayName => entry.DisplayName;
+    public string FullPath    => entry.FullPath;
+    public FileEntryKind Kind => entry.Kind;
 
     private (string Glyph, string ColorHex) IconInfo =>
         FileIconMapper.GetIconInfo(entry.Kind, Path.GetExtension(entry.FullPath));
 
     public string IconGlyph    => IconInfo.Glyph;
     public string IconColorHex => IconInfo.ColorHex;
+
+    private BitmapImage? _thumbnailBitmap;
+    public BitmapImage? ThumbnailBitmap
+    {
+        get => _thumbnailBitmap;
+        set
+        {
+            _thumbnailBitmap = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ThumbnailBitmap)));
+        }
+    }
 
     public string SizeDisplay => entry.SizeBytes switch
     {

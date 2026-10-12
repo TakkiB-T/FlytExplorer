@@ -1,0 +1,81 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Nordic Light colour tokens
+         Inspired by MiniFuse 2 white model: off-white matte surface, same sage-teal accent hue.
+         Avoids pure white — backgrounds carry a subtle cool-green tint for cohesion with Dark. -->
+    <Color x:Key="NordicBackground">#FFF2F5F4</Color>
+    <Color x:Key="NordicSidebar">#FFE6EDE9</Color>
+    <Color x:Key="NordicSurface">#FFDCE6E2</Color>
+    <Color x:Key="NordicHover">#FFCDD9D5</Color>
+    <Color x:Key="NordicSelected">#FFC2D5CF</Color>
+    <Color x:Key="NordicAccent">#FF4E7A71</Color>
+    <Color x:Key="NordicSecondaryAccent">#FF4E6E7A</Color>
+    <Color x:Key="NordicTextPrimary">#FF1A2628</Color>
+    <Color x:Key="NordicTextMuted">#FF5A6E74</Color>
+    <Color x:Key="NordicDivider">#FFBCC8C4</Color>
+
+    <SolidColorBrush x:Key="NordicBackgroundBrush"  Color="{StaticResource NordicBackground}" />
+    <SolidColorBrush x:Key="NordicSidebarBrush"     Color="{StaticResource NordicSidebar}" />
+    <SolidColorBrush x:Key="NordicSurfaceBrush"     Color="{StaticResource NordicSurface}" />
+    <SolidColorBrush x:Key="NordicHoverBrush"       Color="{StaticResource NordicHover}" />
+    <SolidColorBrush x:Key="NordicSelectedBrush"    Color="{StaticResource NordicSelected}" />
+    <SolidColorBrush x:Key="NordicAccentBrush"      Color="{StaticResource NordicAccent}" />
+    <SolidColorBrush x:Key="NordicTextPrimaryBrush" Color="{StaticResource NordicTextPrimary}" />
+    <SolidColorBrush x:Key="NordicTextMutedBrush"   Color="{StaticResource NordicTextMuted}" />
+    <SolidColorBrush x:Key="NordicDividerBrush"     Color="{StaticResource NordicDivider}" />
+
+    <!-- Override key WinUI system brushes for Nordic Light -->
+    <SolidColorBrush x:Key="ApplicationPageBackgroundThemeBrush"
+                     Color="{StaticResource NordicBackground}" />
+    <SolidColorBrush x:Key="SystemControlBackgroundAltHighBrush"
+                     Color="{StaticResource NordicBackground}" />
+
+    <!-- ListView item state colours -->
+    <SolidColorBrush x:Key="ListViewItemBackground"
+                     Color="Transparent" />
+    <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver"
+                     Color="{StaticResource NordicHover}" />
+    <SolidColorBrush x:Key="ListViewItemBackgroundPressed"
+                     Color="{StaticResource NordicHover}" />
+    <SolidColorBrush x:Key="ListViewItemBackgroundSelected"
+                     Color="{StaticResource NordicSelected}" />
+    <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver"
+                     Color="{StaticResource NordicSelected}" />
+    <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed"
+                     Color="{StaticResource NordicSelected}" />
+    <SolidColorBrush x:Key="ListViewItemForeground"
+                     Color="{StaticResource NordicTextPrimary}" />
+    <SolidColorBrush x:Key="ListViewItemForegroundPointerOver"
+                     Color="{StaticResource NordicTextPrimary}" />
+    <SolidColorBrush x:Key="ListViewItemForegroundSelected"
+                     Color="{StaticResource NordicTextPrimary}" />
+    <SolidColorBrush x:Key="ListViewItemFocusBorderBrush"
+                     Color="{StaticResource NordicAccent}" />
+    <SolidColorBrush x:Key="ListViewItemFocusVisualPrimaryBrush"
+                     Color="{StaticResource NordicAccent}" />
+    <SolidColorBrush x:Key="ListViewItemFocusVisualSecondaryBrush"
+                     Color="{StaticResource NordicSurface}" />
+
+    <!-- TextBox colours -->
+    <SolidColorBrush x:Key="TextControlForeground"
+                     Color="{StaticResource NordicTextPrimary}" />
+    <SolidColorBrush x:Key="TextControlBackground"
+                     Color="{StaticResource NordicSidebar}" />
+    <SolidColorBrush x:Key="TextControlBackgroundFocused"
+                     Color="{StaticResource NordicSidebar}" />
+    <SolidColorBrush x:Key="TextControlBackgroundPointerOver"
+                     Color="{StaticResource NordicHover}" />
+    <SolidColorBrush x:Key="TextControlBorderBrush"
+                     Color="{StaticResource NordicDivider}" />
+    <SolidColorBrush x:Key="TextControlBorderBrushFocused"
+                     Color="{StaticResource NordicAccent}" />
+    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver"
+                     Color="{StaticResource NordicAccent}" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForeground"
+                     Color="{StaticResource NordicTextMuted}" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused"
+                     Color="{StaticResource NordicTextMuted}" />
+
+</ResourceDictionary>

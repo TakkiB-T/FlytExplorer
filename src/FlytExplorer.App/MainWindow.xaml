@@ -8,7 +8,7 @@
     mc:Ignorable="d"
     Title="Flyt Explorer">
 
-    <Grid Background="{StaticResource NordicBackgroundBrush}">
+    <Grid Background="{ThemeResource NordicBackgroundBrush}">
         <Grid.Resources>
 
             <local:KindToForegroundConverter x:Key="KindToForeground" />
@@ -121,12 +121,12 @@
                                         <VisualState x:Name="Normal" />
                                         <VisualState x:Name="PointerOver">
                                             <VisualState.Setters>
-                                                <Setter Target="Root.Background" Value="{StaticResource NordicHoverBrush}" />
+                                                <Setter Target="Root.Background" Value="{ThemeResource NordicHoverBrush}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                         <VisualState x:Name="Pressed">
                                             <VisualState.Setters>
-                                                <Setter Target="Root.Background" Value="{StaticResource NordicSelectedBrush}" />
+                                                <Setter Target="Root.Background" Value="{ThemeResource NordicSelectedBrush}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                     </VisualStateGroup>
@@ -245,12 +245,18 @@
                         <ColumnDefinition Width="100" />
                         <ColumnDefinition Width="160" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding IconGlyph}"
-                               FontFamily="Segoe MDL2 Assets"
-                               FontSize="18"
-                               Foreground="{Binding IconColorHex, Converter={StaticResource HexToBrush}}"
-                               VerticalAlignment="Center" />
+                    <!-- Icon column: glyph always present; thumbnail overlays it when loaded -->
+                    <Grid Grid.Column="0" Width="28" Height="28" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding IconGlyph}"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   Foreground="{Binding IconColorHex, Converter={StaticResource HexToBrush}}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center" />
+                        <Image Source="{Binding ThumbnailBitmap}"
+                               Width="28" Height="28"
+                               Stretch="UniformToFill" />
+                    </Grid>
                     <TextBlock Grid.Column="1"
                                Text="{Binding DisplayName}"
                                TextTrimming="CharacterEllipsis"
@@ -259,12 +265,12 @@
                     <TextBlock Grid.Column="2"
                                Text="{Binding SizeDisplay}"
                                HorizontalAlignment="Right"
-                               Foreground="{StaticResource NordicTextMutedBrush}"
+                               Foreground="{ThemeResource NordicTextMutedBrush}"
                                VerticalAlignment="Center"
                                FontSize="12" />
                     <TextBlock Grid.Column="3"
                                Text="{Binding DateModifiedDisplay}"
-                               Foreground="{StaticResource NordicTextMutedBrush}"
+                               Foreground="{ThemeResource NordicTextMutedBrush}"
                                Margin="8,0,0,0"
                                VerticalAlignment="Center"
                                FontSize="12" />
@@ -281,12 +287,17 @@
                         <ColumnDefinition Width="80" />
                         <ColumnDefinition Width="130" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding IconGlyph}"
-                               FontFamily="Segoe MDL2 Assets"
-                               FontSize="18"
-                               Foreground="{Binding IconColorHex, Converter={StaticResource HexToBrush}}"
-                               VerticalAlignment="Center" />
+                    <Grid Grid.Column="0" Width="28" Height="28" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding IconGlyph}"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   Foreground="{Binding IconColorHex, Converter={StaticResource HexToBrush}}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center" />
+                        <Image Source="{Binding ThumbnailBitmap}"
+                               Width="28" Height="28"
+                               Stretch="UniformToFill" />
+                    </Grid>
                     <TextBlock Grid.Column="1"
                                Text="{Binding DisplayName}"
                                TextTrimming="CharacterEllipsis"
@@ -295,19 +306,19 @@
                     <TextBlock Grid.Column="2"
                                Text="{Binding ParentPath}"
                                TextTrimming="CharacterEllipsis"
-                               Foreground="{StaticResource NordicTextMutedBrush}"
+                               Foreground="{ThemeResource NordicTextMutedBrush}"
                                Margin="8,0,0,0"
                                VerticalAlignment="Center"
                                FontSize="12" />
                     <TextBlock Grid.Column="3"
                                Text="{Binding SizeDisplay}"
                                HorizontalAlignment="Right"
-                               Foreground="{StaticResource NordicTextMutedBrush}"
+                               Foreground="{ThemeResource NordicTextMutedBrush}"
                                VerticalAlignment="Center"
                                FontSize="12" />
                     <TextBlock Grid.Column="4"
                                Text="{Binding DateModifiedDisplay}"
-                               Foreground="{StaticResource NordicTextMutedBrush}"
+                               Foreground="{ThemeResource NordicTextMutedBrush}"
                                Margin="8,0,0,0"
                                VerticalAlignment="Center"
                                FontSize="12" />
@@ -326,12 +337,12 @@
         <!-- ── Row 0: Drag strip (invisible, same bg as toolbar) ── -->
         <Border x:Name="DragStrip"
                 Grid.Row="0"
-                Background="{StaticResource NordicSidebarBrush}" />
+                Background="{ThemeResource NordicSidebarBrush}" />
 
         <!-- ── Row 1: Toolbar — same background as tab strip so they read as one chrome band -->
         <Grid x:Name="ToolbarGrid"
               Grid.Row="1"
-              Background="{StaticResource NordicSidebarBrush}">
+              Background="{ThemeResource NordicSidebarBrush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />   <!-- Nav buttons -->
                 <ColumnDefinition Width="*" />      <!-- Address bar (drag area) -->
@@ -364,9 +375,9 @@
                      Grid.Column="1"
                      VerticalAlignment="Center"
                      Margin="4,0"
-                     Background="{StaticResource NordicSidebarBrush}"
-                     Foreground="{StaticResource NordicTextPrimaryBrush}"
-                     BorderBrush="{StaticResource NordicDividerBrush}"
+                     Background="{ThemeResource NordicSidebarBrush}"
+                     Foreground="{ThemeResource NordicTextPrimaryBrush}"
+                     BorderBrush="{ThemeResource NordicDividerBrush}"
                      FontFamily="Segoe UI Variable"
                      AutomationProperties.Name="アドレスバー"
                      KeyDown="AddressBox_KeyDown" />
@@ -380,7 +391,7 @@
 
                 <!-- Scope toggle badge -->
                 <Border Grid.Column="0"
-                        Background="{StaticResource NordicHoverBrush}"
+                        Background="{ThemeResource NordicHoverBrush}"
                         CornerRadius="4"
                         Margin="0,0,3,0"
                         Padding="0">
@@ -390,7 +401,7 @@
                             Height="26"
                             Padding="7,2"
                             Background="Transparent"
-                            Foreground="{StaticResource NordicTextMutedBrush}"
+                            Foreground="{ThemeResource NordicTextMutedBrush}"
                             BorderThickness="0"
                             CornerRadius="4"
                             VerticalAlignment="Center"
@@ -403,9 +414,9 @@
                          Grid.Column="1"
                          PlaceholderText="検索 (Ctrl+K)"
                          VerticalAlignment="Center"
-                         Background="{StaticResource NordicSidebarBrush}"
-                         Foreground="{StaticResource NordicTextPrimaryBrush}"
-                         BorderBrush="{StaticResource NordicDividerBrush}"
+                         Background="{ThemeResource NordicSidebarBrush}"
+                         Foreground="{ThemeResource NordicTextPrimaryBrush}"
+                         BorderBrush="{ThemeResource NordicDividerBrush}"
                          FontFamily="Segoe UI Variable"
                          AutomationProperties.Name="ファイルを検索"
                          TextChanged="SearchBox_TextChanged" />
@@ -415,7 +426,7 @@
             <Border Grid.Column="0" Grid.ColumnSpan="4"
                     VerticalAlignment="Bottom"
                     Height="1"
-                    Background="{StaticResource NordicSidebarBrush}" />
+                    Background="{ThemeResource NordicSidebarBrush}" />
 
             <!-- Caption buttons (rightmost, same height as toolbar) -->
             <StackPanel Grid.Column="3"
@@ -458,13 +469,13 @@
             </Grid.ColumnDefinitions>
 
             <!-- Sidebar navigation -->
-            <Grid Grid.Column="0" Background="{StaticResource NordicSidebarBrush}">
+            <Grid Grid.Column="0" Background="{ThemeResource NordicSidebarBrush}">
                 <ScrollViewer VerticalScrollBarVisibility="Hidden"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Padding="0,10,0,10">
 
                         <TextBlock Text="QUICK ACCESS"
-                                   Foreground="{StaticResource NordicTextMutedBrush}"
+                                   Foreground="{ThemeResource NordicTextMutedBrush}"
                                    FontFamily="Segoe UI Variable"
                                    FontSize="10"
                                    FontWeight="SemiBold"
@@ -475,9 +486,9 @@
                                 Click="SidebarNav_Click">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                           Foreground="{StaticResource NordicAccentBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicAccentBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="Home" FontFamily="Segoe UI Variable" FontSize="13"
-                                           Foreground="{StaticResource NordicTextPrimaryBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicTextPrimaryBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -486,9 +497,9 @@
                                 Click="SidebarNav_Click">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <TextBlock Text="&#xE8FC;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                           Foreground="{StaticResource NordicAccentBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicAccentBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="Desktop" FontFamily="Segoe UI Variable" FontSize="13"
-                                           Foreground="{StaticResource NordicTextPrimaryBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicTextPrimaryBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -497,9 +508,9 @@
                                 Click="SidebarNav_Click">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                           Foreground="{StaticResource NordicAccentBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicAccentBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="Documents" FontFamily="Segoe UI Variable" FontSize="13"
-                                           Foreground="{StaticResource NordicTextPrimaryBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicTextPrimaryBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -508,17 +519,17 @@
                                 Click="SidebarNav_Click">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                           Foreground="{StaticResource NordicAccentBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicAccentBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="Downloads" FontFamily="Segoe UI Variable" FontSize="13"
-                                           Foreground="{StaticResource NordicTextPrimaryBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicTextPrimaryBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
-                        <Border Height="1" Background="{StaticResource NordicDividerBrush}"
+                        <Border Height="1" Background="{ThemeResource NordicDividerBrush}"
                                 Margin="10,8" />
 
                         <TextBlock Text="THIS PC"
-                                   Foreground="{StaticResource NordicTextMutedBrush}"
+                                   Foreground="{ThemeResource NordicTextMutedBrush}"
                                    FontFamily="Segoe UI Variable"
                                    FontSize="10"
                                    FontWeight="SemiBold"
@@ -529,17 +540,17 @@
                                 Click="SidebarNav_Click">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <TextBlock Text="&#xEDA2;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                           Foreground="{StaticResource NordicAccentBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicAccentBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="Local Disk (C:)" FontFamily="Segoe UI Variable" FontSize="13"
-                                           Foreground="{StaticResource NordicTextPrimaryBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicTextPrimaryBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
-                        <Border Height="1" Background="{StaticResource NordicDividerBrush}"
+                        <Border Height="1" Background="{ThemeResource NordicDividerBrush}"
                                 Margin="10,8" />
 
                         <TextBlock Text="NETWORK"
-                                   Foreground="{StaticResource NordicTextMutedBrush}"
+                                   Foreground="{ThemeResource NordicTextMutedBrush}"
                                    FontFamily="Segoe UI Variable"
                                    FontSize="10"
                                    FontWeight="SemiBold"
@@ -549,9 +560,9 @@
                                 Click="NetworkNav_Click">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <TextBlock Text="&#xE968;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                           Foreground="{StaticResource NordicAccentBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicAccentBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="Network path…" FontFamily="Segoe UI Variable" FontSize="13"
-                                           Foreground="{StaticResource NordicTextMutedBrush}" VerticalAlignment="Center" />
+                                           Foreground="{ThemeResource NordicTextMutedBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -560,12 +571,12 @@
             </Grid>
 
             <!-- Divider -->
-            <Border Grid.Column="1" Background="{StaticResource NordicDividerBrush}" />
+            <Border Grid.Column="1" Background="{ThemeResource NordicDividerBrush}" />
 
             <!-- Per-tab file browser — content (ListView, ProgressRing) built in code-behind -->
             <TabView x:Name="MainTabView"
                      Grid.Column="2"
-                     Background="{StaticResource NordicBackgroundBrush}"
+                     Background="{ThemeResource NordicBackgroundBrush}"
                      TabWidthMode="SizeToContent"
                      AutomationProperties.Name="ファイルブラウザー"
                      TabCloseRequested="MainTabView_TabCloseRequested"
@@ -574,7 +585,7 @@
         </Grid>
 
         <!-- ── Row 3: Status bar ── -->
-        <Grid Grid.Row="3" Background="{StaticResource NordicSurfaceBrush}" Padding="12,0">
+        <Grid Grid.Row="3" Background="{ThemeResource NordicSurfaceBrush}" Padding="12,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -584,7 +595,7 @@
                        Grid.Column="0"
                        Text="Ready"
                        VerticalAlignment="Center"
-                       Foreground="{StaticResource NordicTextMutedBrush}"
+                       Foreground="{ThemeResource NordicTextMutedBrush}"
                        FontFamily="Segoe UI Variable"
                        FontSize="12" />
 
@@ -608,7 +619,7 @@
                 <TextBlock x:Name="SearchPageLabel"
                            Text="1 / 1"
                            VerticalAlignment="Center"
-                           Foreground="{StaticResource NordicTextMutedBrush}"
+                           Foreground="{ThemeResource NordicTextMutedBrush}"
                            FontFamily="Segoe UI Variable"
                            FontSize="12" />
                 <Button x:Name="SearchNextButton"
@@ -626,7 +637,7 @@
                        Grid.Column="2"
                        Visibility="Collapsed"
                        VerticalAlignment="Center"
-                       Foreground="{StaticResource NordicAccentBrush}"
+                       Foreground="{ThemeResource NordicAccentBrush}"
                        FontFamily="Segoe UI Variable"
                        FontSize="12"
                        Margin="0,0,4,0" />

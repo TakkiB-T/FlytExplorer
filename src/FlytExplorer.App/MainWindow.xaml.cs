@@ -45,9 +45,10 @@ public sealed partial class MainWindow : Window
 
     // ── Shared services ───────────────────────────────────────────────────
 
-    private readonly LocalFolderProvider      _folderProvider = new();
-    private readonly EverythingSearchProvider _searchProvider = new();
-    private readonly FileOperationService     _fileOpService  = new();
+    private readonly LocalFolderProvider      _folderProvider    = new();
+    private readonly EverythingSearchProvider _searchProvider    = new();
+    private readonly FileOperationService     _fileOpService     = new();
+    private readonly ShellThumbnailService    _thumbnailService  = new();
 
     // ── Sidebar shortcut paths (x:Bind targets must be public) ───────────
 
@@ -537,6 +538,10 @@ public sealed partial class MainWindow : Window
             tab.Empty.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
             UpdateActiveTabHeader();
             ExitSearchMode();
+
+            // Load thumbnails for the first 50 items asynchronously after the folder is shown.
+            // Fire-and-forget; cancelled automatically when the tab navigates away.
+            _ = LoadThumbnailsAsync(tab.Items, token);
         }
         catch (OperationCanceledException) when (uncTimeoutCts?.IsCancellationRequested == true && !baseCts.IsCancellationRequested)
         {
@@ -548,6 +553,20 @@ public sealed partial class MainWindow : Window
         catch (IOException                  ex) when (isUnc) { StatusText.Text = $"ネットワークエラー: {ex.Message}"; }
         catch (Exception                    ex) { StatusText.Text = $"エラー: {ex.Message}"; }
         finally { tab.Loading.IsActive = false; }
+    }
+
+    private const int ThumbnailBatchLimit = 50;
+
+    private async Task LoadThumbnailsAsync(
+        IEnumerable<FileEntryViewModel> items, CancellationToken ct)
+    {
+        foreach (var vm in items.Take(ThumbnailBatchLimit))
+        {
+            if (ct.IsCancellationRequested) break;
+            var bmp = await _thumbnailService.GetThumbnailAsync(vm.FullPath, 32, ct);
+            if (bmp != null)
+                vm.ThumbnailBitmap = bmp;
+        }
     }
 
     private void Navigate(string path)
