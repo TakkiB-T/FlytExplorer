@@ -550,6 +550,19 @@
                             </StackPanel>
                         </Button>
 
+                        <!-- Favorites section (hidden until items are pinned) -->
+                        <StackPanel x:Name="FavoritesSection" Visibility="Collapsed">
+                            <Border Height="1" Background="{ThemeResource NordicDividerBrush}"
+                                    Margin="10,8" />
+                            <TextBlock Text="FAVORITES"
+                                       Foreground="{ThemeResource NordicTextMutedBrush}"
+                                       FontFamily="Segoe UI Variable"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Margin="14,0,0,4" />
+                            <StackPanel x:Name="FavoritesList" />
+                        </StackPanel>
+
                         <Border Height="1" Background="{ThemeResource NordicDividerBrush}"
                                 Margin="10,8" />
 

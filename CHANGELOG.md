@@ -2,6 +2,21 @@
 
 All notable changes to FlytExplorer are documented here.
 
+## [0.16.0] — Favorites (pinned folders) in sidebar
+
+### Added
+- **お気に入り (FAVORITES) セクション** in the sidebar — pinned folders appear under a
+  "FAVORITES" heading between Quick Access and This PC. The section is hidden until at
+  least one folder is pinned.
+- **「お気に入りに追加 / お気に入りから削除」** context menu item — shown only when a single
+  directory is selected. Label toggles based on whether the folder is already pinned.
+- Each favorite entry has a **✕ remove button** (ⓧ glyph) on the right to unpin directly
+  from the sidebar without using the context menu.
+- `_favorites` list, `MenuPinFavorite_Click`, and `RebuildFavoritesPanel()` in code-behind.
+  Favorites persist for the session (no disk storage yet).
+
+---
+
 ## [0.15.0] — Address bar history with AutoSuggestBox
 
 ### Changed

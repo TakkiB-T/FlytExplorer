@@ -91,7 +91,10 @@ public sealed partial class MainWindow : Window
     private MenuFlyout?     _contextMenu;
     private MenuFlyoutItem? _menuOpen, _menuRename, _menuCopy, _menuCut,
                             _menuPaste, _menuDelete, _menuNewFolder, _menuNewFile,
-                            _menuProperties, _menuCopyPath, _menuOpenTerminal, _menuOpenExplorer;
+                            _menuProperties, _menuCopyPath, _menuOpenTerminal, _menuOpenExplorer,
+                            _menuPinFavorite;
+
+    private readonly List<string> _favorites = new();
 
     // ── DWM border colour ─────────────────────────────────────────────────
 
@@ -467,6 +470,7 @@ public sealed partial class MainWindow : Window
         _menuCopyPath     = MakeMenuItem("パスをコピー",        "", MenuCopyPath_Click);
         _menuOpenTerminal = MakeMenuItem("ターミナルで開く",    "", MenuOpenTerminal_Click);
 
+        _menuPinFavorite  = MakeMenuItem("お気に入りに追加",    "", MenuPinFavorite_Click);
         _contextMenu = new MenuFlyout
         {
             MenuFlyoutPresenterStyle = (Style)WindowResources["NordicMenuFlyoutPresenterStyle"],
@@ -488,6 +492,7 @@ public sealed partial class MainWindow : Window
 
         _contextMenu.Items.Add(_menuOpenTerminal);
         _contextMenu.Items.Add(_menuOpenExplorer);
+        _contextMenu.Items.Add(_menuPinFavorite);
         _contextMenu.Items.Add(new MenuFlyoutSeparator());
         _contextMenu.Items.Add(_menuProperties);
 
@@ -934,6 +939,19 @@ public sealed partial class MainWindow : Window
         _menuNewFile!.IsEnabled      = true;
         _menuOpenTerminal!.IsEnabled = true;
         _menuOpenExplorer!.IsEnabled = true;
+
+        var singleDir = singleItem &&
+            (GetActiveListView().SelectedItem as FileEntryViewModel)?.Kind == Core.Models.FileEntryKind.Directory;
+        if (singleDir)
+        {
+            var selPath = ((FileEntryViewModel)GetActiveListView().SelectedItem!).FullPath;
+            _menuPinFavorite!.Text      = _favorites.Contains(selPath) ? "お気に入りから削除" : "お気に入りに追加";
+            _menuPinFavorite.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            _menuPinFavorite!.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void MenuOpen_Click(object sender, RoutedEventArgs e)
@@ -968,6 +986,85 @@ public sealed partial class MainWindow : Window
             });
         }
         catch { }
+    }
+
+    private void MenuPinFavorite_Click(object sender, RoutedEventArgs e)
+    {
+        var lv = GetActiveListView();
+        if (lv.SelectedItem is not FileEntryViewModel vm) return;
+        if (vm.Kind != Core.Models.FileEntryKind.Directory) return;
+        var fav = vm.FullPath;
+        if (_favorites.Contains(fav))
+            _favorites.Remove(fav);
+        else
+            _favorites.Add(fav);
+        RebuildFavoritesPanel();
+    }
+
+    private void RebuildFavoritesPanel()
+    {
+        FavoritesList.Children.Clear();
+        foreach (var fpath in _favorites)
+        {
+            var name = Path.GetFileName(fpath) is { Length: > 0 } n ? n : fpath;
+            var row = new Grid();
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var navBtn = new Button
+            {
+                Tag   = fpath,
+                Style = (Style)WindowResources["SidebarNavStyle"],
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+            };
+            var sp = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+            sp.Children.Add(new TextBlock
+            {
+                Text       = "",
+                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets"),
+                FontSize   = 14,
+                Foreground = GetThemeBrush("NordicAccentBrush"),
+                VerticalAlignment = VerticalAlignment.Center,
+            });
+            sp.Children.Add(new TextBlock
+            {
+                Text       = name,
+                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe UI Variable"),
+                FontSize   = 13,
+                Foreground = GetThemeBrush("NordicTextPrimaryBrush"),
+                VerticalAlignment = VerticalAlignment.Center,
+            });
+            navBtn.Content = sp;
+            navBtn.Click   += SidebarNav_Click;
+            Grid.SetColumn(navBtn, 0);
+
+            var removeBtn = new Button
+            {
+                Content = new TextBlock
+                {
+                    Text       = "",
+                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets"),
+                    FontSize   = 10,
+                    Foreground = GetThemeBrush("NordicTextMutedBrush"),
+                },
+                Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)),
+                BorderThickness = new Thickness(0),
+                Padding         = new Thickness(6, 4, 6, 4),
+                VerticalAlignment = VerticalAlignment.Center,
+                Tag = fpath,
+            };
+            removeBtn.Click += (s, _) =>
+            {
+                _favorites.Remove((string)((Button)s!).Tag);
+                RebuildFavoritesPanel();
+            };
+            Grid.SetColumn(removeBtn, 1);
+
+            row.Children.Add(navBtn);
+            row.Children.Add(removeBtn);
+            FavoritesList.Children.Add(row);
+        }
+        FavoritesSection.Visibility = _favorites.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void MenuCopyPath_Click(object sender, RoutedEventArgs e)
