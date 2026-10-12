@@ -152,10 +152,42 @@ public sealed partial class MainWindow : Window
         catch { }
     }
 
+    // ── Theme helpers ─────────────────────────────────────────────────────
+
+    // ActualTheme is always Light or Dark (never Default) on a loaded element.
+    private ElementTheme CurrentTheme =>
+        (Content as FrameworkElement)?.ActualTheme ?? ElementTheme.Dark;
+
+    // Reads from the active ThemeDictionary (which searches nested MergedDictionaries
+    // so NordicDark/NordicLight.xaml keys resolve), falling back to flat MergedDictionaries.
+    private Brush GetThemeBrush(string key)
+    {
+        var themeKey = CurrentTheme == ElementTheme.Light ? "Light" : "Dark";
+        if (Application.Current.Resources.ThemeDictionaries.TryGetValue(themeKey, out var dict) &&
+            dict is ResourceDictionary rd &&
+            rd.TryGetValue(key, out var val) && val is Brush b)
+            return b;
+        return Application.Current.Resources[key] as Brush
+               ?? new SolidColorBrush(Colors.Transparent);
+    }
+
+    private void OnActualThemeChanged(FrameworkElement sender, object args)
+    {
+        foreach (var tab in _tabs)
+        {
+            tab.Loading.Foreground = GetThemeBrush("NordicAccentBrush");
+            tab.Empty.Foreground   = GetThemeBrush("NordicTextMutedBrush");
+        }
+        ApplyNordicBorderColor();
+    }
+
     private void ApplyNordicBorderColor()
     {
         const uint DWMWA_BORDER_COLOR = 34;
-        int color = 0x00ACB598; // NordicAccent as COLORREF (BGR)
+        // COLORREF format: 0x00BBGGRR
+        int color = CurrentTheme == ElementTheme.Light
+            ? 0x00717A4E   // NordicLight accent #4E7A71 (R=4E, G=7A, B=71 → BGR)
+            : 0x00C4B872;  // NordicDark  accent #72B8C4 (R=72, G=B8, B=C4 → BGR)
         try { DwmSetWindowAttribute(WindowNative.GetWindowHandle(this), DWMWA_BORDER_COLOR, ref color, 4); }
         catch { }
     }
@@ -176,6 +208,8 @@ public sealed partial class MainWindow : Window
         AppWindow.Changed     += OnAppWindowChanged;
         DragStrip.Loaded      += (_, _) => UpdateDragRect();
         DragStrip.SizeChanged += (_, _) => UpdateDragRect();
+        if (Content is FrameworkElement fe)
+            fe.ActualThemeChanged += OnActualThemeChanged;
         ApplyNordicBorderColor();
         AddTab(_homeDir);
     }
@@ -240,7 +274,7 @@ public sealed partial class MainWindow : Window
             Height              = 48,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment   = VerticalAlignment.Center,
-            Foreground          = (SolidColorBrush)Application.Current.Resources["NordicAccentBrush"],
+            Foreground          = GetThemeBrush("NordicAccentBrush"),
         };
 
         var emptyMsg = new TextBlock
@@ -249,7 +283,7 @@ public sealed partial class MainWindow : Window
             Visibility          = Visibility.Collapsed,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment   = VerticalAlignment.Center,
-            Foreground          = (SolidColorBrush)Application.Current.Resources["NordicTextMutedBrush"],
+            Foreground          = GetThemeBrush("NordicTextMutedBrush"),
             FontFamily          = new FontFamily("Segoe UI Variable"),
         };
 
@@ -1011,7 +1045,7 @@ public sealed partial class MainWindow : Window
             var row = new Grid();
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            var lbl = new TextBlock { Text = label, Foreground = (Brush)Application.Current.Resources["NordicTextMutedBrush"] };
+            var lbl = new TextBlock { Text = label, Foreground = GetThemeBrush("NordicTextMutedBrush") };
             var val = new TextBlock { Text = value,  TextWrapping = TextWrapping.Wrap };
             Grid.SetColumn(val, 1);
             row.Children.Add(lbl);
