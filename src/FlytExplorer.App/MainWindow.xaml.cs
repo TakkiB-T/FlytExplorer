@@ -79,6 +79,44 @@ public sealed partial class MainWindow : Window
     private static extern int DwmSetWindowAttribute(
         IntPtr hwnd, uint dwAttribute, ref int pvAttribute, uint cbAttribute);
 
+    // ── Win32 thread-local keyboard hook (Ctrl+T / Ctrl+W regardless of focus) ──
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    private delegate IntPtr KeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")] private static extern IntPtr SetWindowsHookEx(int idHook, KeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+    [DllImport("user32.dll")] private static extern bool   UnhookWindowsHookEx(IntPtr hhk);
+    [DllImport("user32.dll")] private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+    [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll")] private static extern short GetKeyState(int nVirtKey);
+
+    private IntPtr        _keyboardHook;
+    private KeyboardProc? _keyboardHookDelegate; // keep alive: GC must not collect it
+
+    private void InstallKeyboardHook()
+    {
+        _keyboardHookDelegate = KeyboardHookProc;
+        _keyboardHook = SetWindowsHookEx(2 /* WH_KEYBOARD */, _keyboardHookDelegate, IntPtr.Zero, GetCurrentThreadId());
+    }
+
+    private IntPtr KeyboardHookProc(int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        // lParam bit 31: 1=key-up, 0=key-down. Only act on key-down.
+        if (nCode >= 0 && ((int)lParam & unchecked((int)0x80000000)) == 0)
+        {
+            bool ctrl = (GetKeyState(0x11) & 0x8000) != 0; // VK_CONTROL
+            if (ctrl)
+            {
+                switch (wParam.ToInt32())
+                {
+                    case 0x54: DispatcherQueue.TryEnqueue(AddTab);                          break; // T
+                    case 0x57: DispatcherQueue.TryEnqueue(() => CloseTab(_activeTabIndex)); break; // W
+                }
+            }
+        }
+        return CallNextHookEx(_keyboardHook, nCode, wParam, lParam);
+    }
+
     // ── Empty-area right-click via PointerReleased ────────────────────────
 
     private void Content_PointerReleased(object sender, PointerRoutedEventArgs e)
@@ -116,6 +154,13 @@ public sealed partial class MainWindow : Window
     {
         (AppWindow.Presenter as OverlappedPresenter)?.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
         InitializeComponent();
+        // Ctrl+T/W are handled by the WH_KEYBOARD thread hook (installed below) so they
+        // fire regardless of which element — if any — has WinUI 3 keyboard focus.
+        InstallKeyboardHook();
+        Closed += (_, _) =>
+        {
+            if (_keyboardHook != IntPtr.Zero) { UnhookWindowsHookEx(_keyboardHook); _keyboardHook = IntPtr.Zero; }
+        };
         AppWindow.Changed     += OnAppWindowChanged;
         DragStrip.Loaded      += (_, _) => UpdateDragRect();
         DragStrip.SizeChanged += (_, _) => UpdateDragRect();
@@ -211,6 +256,8 @@ public sealed partial class MainWindow : Window
         var emptyFooter = new Grid { Background = new SolidColorBrush(Colors.Transparent), MinHeight = 1 };
         emptyFooter.AddHandler(UIElement.PointerReleasedEvent,
             new PointerEventHandler(Content_PointerReleased), handledEventsToo: true);
+        // Clicking the blank footer returns focus to the ListView for ↑↓/Enter navigation.
+        emptyFooter.Tapped += (_, _) => listView.Focus(FocusState.Programmatic);
         listView.Footer = emptyFooter;
 
         void UpdateFooterHeight()
@@ -319,6 +366,13 @@ public sealed partial class MainWindow : Window
         if (newIndex < 0 || newIndex >= _tabs.Count) return;
         _activeTabIndex = newIndex;
         SyncToolbarToActiveTab();
+        // Restore keyboard focus to the ListView so ↑↓/Enter navigation works immediately.
+        var lv = _tabs[_activeTabIndex].ListView;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!lv.Focus(FocusState.Programmatic))
+                MainTabView.Focus(FocusState.Programmatic);
+        });
     }
 
     // ── Context menu (created once, shared across all tab ListViews) ──────
@@ -534,8 +588,13 @@ public sealed partial class MainWindow : Window
         return Task.CompletedTask;
     }
 
-    private void FileListView_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+    private void FileListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
         UpdateSelectionStatus();
+        // Return focus to the ListView when selection is cleared so ↑↓/Enter still works.
+        if (sender is ListView lv && lv.SelectedItems.Count == 0)
+            lv.Focus(FocusState.Programmatic);
+    }
 
     private void UpdateSelectionStatus()
     {
@@ -593,14 +652,6 @@ public sealed partial class MainWindow : Window
                 break;
             case VirtualKey.N when ctrl && shift:
                 _ = NewFolderAsync();
-                e.Handled = true;
-                break;
-            case VirtualKey.T when ctrl:
-                AddTab();
-                e.Handled = true;
-                break;
-            case VirtualKey.W when ctrl:
-                CloseTab(_activeTabIndex);
                 e.Handled = true;
                 break;
             case VirtualKey.F5:
