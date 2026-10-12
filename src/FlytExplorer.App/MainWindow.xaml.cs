@@ -209,6 +209,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         (AppWindow.Presenter as OverlappedPresenter)?.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "FlytExplorer.ico"));
         InitializeComponent();
         InstallKeyboardHook();
         Closed += (_, _) =>
