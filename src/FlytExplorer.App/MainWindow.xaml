@@ -379,6 +379,11 @@
                 <Button x:Name="RefreshButton" Tag="&#xE72C;" Style="{StaticResource TitleBarButtonStyle}"
                         Width="36" Height="36" Click="RefreshButton_Click" ToolTipService.ToolTip="Refresh"
                         AutomationProperties.Name="更新" />
+                <Button x:Name="ShowHiddenButton" Tag="&#xE7B3;" Opacity="0.35"
+                        Style="{StaticResource TitleBarButtonStyle}"
+                        Width="36" Height="36" Click="ShowHiddenButton_Click"
+                        ToolTipService.ToolTip="隠しファイルを表示"
+                        AutomationProperties.Name="隠しファイルを表示" />
             </StackPanel>
 
             <!-- Address bar (also acts as drag region via SetTitleBar on ToolbarGrid) -->

@@ -2,6 +2,17 @@
 
 All notable changes to FlytExplorer are documented here.
 
+## [0.13.0] — Hidden files toggle, Open in Explorer
+
+### Added
+- **隠しファイル表示切替ボタン** (eye icon) — toolbar toggle button next to Refresh.
+  Opacity 0.35 when off (default), 1.0 when on. Clicking re-navigates the current folder
+  applying `FileAttributes.Hidden` filter. State is global (applies to all tabs).
+- **「Explorerで開く」** context menu item — opens Windows Explorer with `/select,"path"` to
+  highlight the selected file, or at the current folder if nothing is selected.
+
+---
+
 ## [0.12.0] — New file
 
 ### Added

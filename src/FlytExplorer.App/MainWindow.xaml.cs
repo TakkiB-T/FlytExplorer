@@ -54,6 +54,8 @@ public sealed partial class MainWindow : Window
     private readonly FileOperationService     _fileOpService     = new();
     private readonly ShellThumbnailService    _thumbnailService  = new();
 
+    private bool _showHiddenFiles = false;
+
     // ── Sidebar shortcut paths (x:Bind targets must be public) ───────────
 
     public string _homeDir      = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -86,7 +88,7 @@ public sealed partial class MainWindow : Window
     private MenuFlyout?     _contextMenu;
     private MenuFlyoutItem? _menuOpen, _menuRename, _menuCopy, _menuCut,
                             _menuPaste, _menuDelete, _menuNewFolder, _menuNewFile,
-                            _menuProperties, _menuCopyPath, _menuOpenTerminal;
+                            _menuProperties, _menuCopyPath, _menuOpenTerminal, _menuOpenExplorer;
 
     // ── DWM border colour ─────────────────────────────────────────────────
 
@@ -479,7 +481,10 @@ public sealed partial class MainWindow : Window
         _contextMenu.Items.Add(new MenuFlyoutSeparator());
         _contextMenu.Items.Add(_menuNewFolder);
         _contextMenu.Items.Add(_menuNewFile);
+        _menuOpenExplorer = MakeMenuItem("Explorerで開く", "", MenuOpenExplorer_Click);
+
         _contextMenu.Items.Add(_menuOpenTerminal);
+        _contextMenu.Items.Add(_menuOpenExplorer);
         _contextMenu.Items.Add(new MenuFlyoutSeparator());
         _contextMenu.Items.Add(_menuProperties);
 
@@ -602,6 +607,7 @@ public sealed partial class MainWindow : Window
         {
             await foreach (var entry in _folderProvider.EnumerateAsync(path, token))
             {
+                if (!_showHiddenFiles && (entry.Attributes & System.IO.FileAttributes.Hidden) != 0) continue;
                 buf.Add(new FileEntryViewModel(entry));
                 count++;
 
@@ -729,6 +735,13 @@ public sealed partial class MainWindow : Window
 
     private void RefreshButton_Click(object sender, RoutedEventArgs e) =>
         _ = NavigateToAsync(ActiveTab.CurrentPath);
+
+    private void ShowHiddenButton_Click(object sender, RoutedEventArgs e)
+    {
+        _showHiddenFiles = !_showHiddenFiles;
+        ShowHiddenButton.Opacity = _showHiddenFiles ? 1.0 : 0.35;
+        _ = NavigateToAsync(ActiveTab.CurrentPath);
+    }
 
     private void AddressBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {
@@ -897,6 +910,7 @@ public sealed partial class MainWindow : Window
         _menuDelete!.IsEnabled       = hasSelection;
         _menuNewFile!.IsEnabled      = true;
         _menuOpenTerminal!.IsEnabled = true;
+        _menuOpenExplorer!.IsEnabled = true;
     }
 
     private void MenuOpen_Click(object sender, RoutedEventArgs e)
@@ -912,9 +926,26 @@ public sealed partial class MainWindow : Window
     private void MenuCut_Click(object sender, RoutedEventArgs e)       => CopySelected(cut: true);
     private void MenuPaste_Click(object sender, RoutedEventArgs e)     => _ = PasteAsync();
     private void MenuDelete_Click(object sender, RoutedEventArgs e)    => _ = DeleteSelectedAsync(permanent: false);
-    private void MenuNewFolder_Click(object sender, RoutedEventArgs e)  => _ = NewFolderAsync();
-    private void MenuNewFile_Click(object sender, RoutedEventArgs e)    => _ = NewFileAsync();
-    private void MenuProperties_Click(object sender, RoutedEventArgs e) => _ = ShowPropertiesAsync();
+    private void MenuNewFolder_Click(object sender, RoutedEventArgs e)    => _ = NewFolderAsync();
+    private void MenuNewFile_Click(object sender, RoutedEventArgs e)      => _ = NewFileAsync();
+    private void MenuProperties_Click(object sender, RoutedEventArgs e)   => _ = ShowPropertiesAsync();
+    private void MenuOpenExplorer_Click(object sender, RoutedEventArgs e)
+    {
+        var lv     = GetActiveListView();
+        string arg = lv.SelectedItem is FileEntryViewModel vm
+            ? $"/select,\"{vm.FullPath}\""
+            : $"\"{ActiveTab.CurrentPath}\"";
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName        = "explorer.exe",
+                Arguments       = arg,
+                UseShellExecute = true,
+            });
+        }
+        catch { }
+    }
 
     private void MenuCopyPath_Click(object sender, RoutedEventArgs e)
     {
