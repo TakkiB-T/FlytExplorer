@@ -371,8 +371,8 @@ public sealed partial class MainWindow : Window
             double remaining = listView.ActualHeight - headerH - listView.Items.Count * 36.0;
             emptyFooter.MinHeight = Math.Max(1, remaining);
         }
-        listView.Loaded      += (_, _) => UpdateFooterHeight();
-        listView.SizeChanged += (_, _) => UpdateFooterHeight();
+        listView.Loaded      += (_, _) => DispatcherQueue.TryEnqueue(UpdateFooterHeight);
+        listView.SizeChanged += (_, _) => DispatcherQueue.TryEnqueue(UpdateFooterHeight);
         data.Items.CollectionChanged += (_, _) => DispatcherQueue.TryEnqueue(UpdateFooterHeight);
 
         listView.CanDragItems               = true;
