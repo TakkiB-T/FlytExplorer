@@ -2,6 +2,24 @@
 
 All notable changes to FlytExplorer are documented here.
 
+## [0.9.2] — Publish package fix
+
+### Fixed
+- **`dotnet publish` crash at startup**: WinUI 3 compiled XAML (`.xbf`) and package resource
+  index (`.pri`) files were not copied to the publish output, causing `Microsoft.UI.Xaml.dll`
+  to throw `STATUS_FAIL_FAST_EXCEPTION` (0xc000027b) at first XAML load.
+  Added `CopyWinUIResourcesOnPublish` MSBuild target to `FlytExplorer.App.csproj` that copies
+  `*.xbf`, `Themes/*.xbf`, and `*.pri` from the RID build output into the publish directory
+  after publish completes.
+
+### Verified
+- `dotnet publish -r win-x64 --self-contained false` → publish exe runs stably.
+- Release package: `FlytExplorer-v0.9.2-win-x64.zip` (26.5 MB), contains all required runtime files.
+- DPI awareness: PerMonitor (value 2) confirmed at 125% display scale.
+- Drag region: `UpdateDragRect` uses `XamlRoot.RasterizationScale` — correctly converts DIP to physical pixels.
+
+---
+
 ## [0.9.1] — Launch crash fix
 
 ### Fixed
