@@ -7,12 +7,12 @@ namespace FlytExplorer.UnitTests;
 // All operations run inside tmp/fixtures/ops_test — no personal files are touched.
 public sealed class FileOperationServiceTests : IDisposable
 {
-    // BaseDirectory: …/tests/FlytExplorer.UnitTests/bin/Debug/net10.0.../
-    // Five ".." steps reach the repo root (FlytExplorer-Design-v1.0)
+    // BaseDirectory: …/tests/FlytExplorer.UnitTests/bin/x64/Debug/net10.0.../
+    // Six ".." steps reach the repo root (FlytExplorer-Design-v1.0)
     private static readonly string FixtureBase =
         Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
-            "..", "..", "..", "..", "..", "tmp", "fixtures", "ops_test"));
+            "..", "..", "..", "..", "..", "..", "tmp", "fixtures", "ops_test"));
 
     private readonly FileOperationService _svc = new();
 
@@ -84,6 +84,73 @@ public sealed class FileOperationServiceTests : IDisposable
         // Successful COM call is proof the STA invariant held; error message contains COM HRESULT on failure.
         Assert.True(result.Succeeded, $"STA verification copy failed: {result.ErrorMessage}");
         Assert.DoesNotContain("COM error", result.ErrorMessage ?? string.Empty);
+    }
+
+    // ---------- move ----------
+
+    [SkippableFact]
+    public async Task MoveItem_WithinFixtures_MovesFile()
+    {
+        var src  = Path.Combine(FixtureBase, "source_4.txt");
+        var dest = Path.Combine(FixtureBase, "copy_dest");
+        Directory.CreateDirectory(dest);
+        var destFile = Path.Combine(dest, "source_4.txt");
+        if (File.Exists(destFile)) File.Move(destFile, src, overwrite: true);
+
+        Skip.IfNot(File.Exists(src), $"Fixture not found: {src}");
+
+        var result = await _svc.ExecuteAsync(
+            new FileOperationRequest(FileOperationKind.Move, [src], dest, null, 0),
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded, $"Move failed: {result.ErrorMessage}");
+        Assert.True(File.Exists(destFile), "File was not found at destination after move");
+        Assert.False(File.Exists(src), "Source file still exists after move");
+
+        // Restore for repeatability
+        File.Move(destFile, src, overwrite: true);
+    }
+
+    // ---------- delete (recycle bin) ----------
+
+    [SkippableFact]
+    public async Task DeleteItem_WithinFixtures_SendsToRecycleBin()
+    {
+        var src = Path.Combine(FixtureBase, "source_5.txt");
+        Skip.IfNot(File.Exists(src), $"Fixture not found: {src}");
+
+        // IFileOperation with FOF_ALLOWUNDO sends to recycle bin (does not hard-delete).
+        var result = await _svc.ExecuteAsync(
+            new FileOperationRequest(FileOperationKind.Delete, [src], null, null, 0),
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded, $"Delete failed: {result.ErrorMessage}");
+        Assert.False(File.Exists(src), "File still exists after recycle-bin delete");
+
+        // Restore so the test is repeatable: recreate the fixture file.
+        await File.WriteAllTextAsync(src, "ops_test fixture source_5");
+    }
+
+    // ---------- new folder ----------
+
+    [SkippableFact]
+    public async Task NewFolder_WithinFixtures_CreatesDirectory()
+    {
+        var dest       = Path.Combine(FixtureBase, "copy_dest");
+        var folderName = "new_folder_test";
+        var created    = Path.Combine(dest, folderName);
+        Directory.CreateDirectory(dest);
+        if (Directory.Exists(created)) Directory.Delete(created, recursive: true);
+
+        var result = await _svc.ExecuteAsync(
+            new FileOperationRequest(FileOperationKind.NewFolder, [], dest, folderName, 0),
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded, $"NewFolder failed: {result.ErrorMessage}");
+        Assert.True(Directory.Exists(created), "New folder was not created");
+
+        // Cleanup
+        Directory.Delete(created, recursive: true);
     }
 
     // ---------- aborted detection ----------
