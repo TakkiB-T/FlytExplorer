@@ -6,6 +6,13 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <!--
+                    NordicDark.xaml in flat MergedDictionaries provides a dark-mode
+                    fallback for code-behind Resource["key"] lookups that cannot
+                    search ThemeDictionaries. {ThemeResource} in XAML still resolves
+                    the correct per-theme value from ThemeDictionaries first.
+                -->
+                <ResourceDictionary Source="Themes/NordicDark.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!--

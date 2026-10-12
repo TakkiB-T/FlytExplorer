@@ -19,7 +19,7 @@
                 <Setter Property="Padding" Value="0" />
             </Style>
 
-            <!-- Minimize / Maximize button -->
+            <!-- Minimize / Maximize button — uses ThemeResource for light/dark chrome -->
             <Style x:Key="TitleBarButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
@@ -35,14 +35,14 @@
                                         <VisualState x:Name="Normal" />
                                         <VisualState x:Name="PointerOver">
                                             <VisualState.Setters>
-                                                <Setter Target="Root.Background" Value="#2A3C48" />
-                                                <Setter Target="Glyph.Foreground" Value="#D4E2E0" />
+                                                <Setter Target="Root.Background" Value="{ThemeResource NordicTitleBarHoverBackground}" />
+                                                <Setter Target="Glyph.Foreground" Value="{ThemeResource NordicTitleBarHoverForeground}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                         <VisualState x:Name="Pressed">
                                             <VisualState.Setters>
-                                                <Setter Target="Root.Background" Value="#334856" />
-                                                <Setter Target="Glyph.Foreground" Value="#D4E2E0" />
+                                                <Setter Target="Root.Background" Value="{ThemeResource NordicTitleBarPressedBackground}" />
+                                                <Setter Target="Glyph.Foreground" Value="{ThemeResource NordicTitleBarHoverForeground}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                     </VisualStateGroup>
@@ -51,7 +51,7 @@
                                            Text="{TemplateBinding Tag}"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="10"
-                                           Foreground="#5C8896"
+                                           Foreground="{ThemeResource NordicTitleBarGlyphForeground}"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center" />
                             </Grid>
@@ -60,7 +60,7 @@
                 </Setter>
             </Style>
 
-            <!-- Close button (danger hover) -->
+            <!-- Close button — danger-red hover is the same in both themes -->
             <Style x:Key="TitleBarCloseStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
@@ -92,7 +92,7 @@
                                            Text="{TemplateBinding Tag}"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="10"
-                                           Foreground="#5C8896"
+                                           Foreground="{ThemeResource NordicTitleBarGlyphForeground}"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center" />
                             </Grid>
@@ -259,6 +259,7 @@
                     </Grid>
                     <TextBlock Grid.Column="1"
                                Text="{Binding DisplayName}"
+                               Foreground="{ThemeResource NordicTextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center"
                                FontSize="13" />
@@ -300,6 +301,7 @@
                     </Grid>
                     <TextBlock Grid.Column="1"
                                Text="{Binding DisplayName}"
+                               Foreground="{ThemeResource NordicTextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center"
                                FontSize="13" />

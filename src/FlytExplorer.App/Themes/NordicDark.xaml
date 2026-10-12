@@ -56,6 +56,12 @@
     <SolidColorBrush x:Key="ListViewItemFocusVisualSecondaryBrush"
                      Color="{StaticResource NordicSurface}" />
 
+    <!-- Title bar caption button tokens -->
+    <SolidColorBrush x:Key="NordicTitleBarGlyphForeground"  Color="#FF5C8896" />
+    <SolidColorBrush x:Key="NordicTitleBarHoverBackground"  Color="#FF2A3C48" />
+    <SolidColorBrush x:Key="NordicTitleBarPressedBackground" Color="#FF334856" />
+    <SolidColorBrush x:Key="NordicTitleBarHoverForeground"  Color="#FFD4E2E0" />
+
     <!-- TextBox colours -->
     <SolidColorBrush x:Key="TextControlForeground"
                      Color="{StaticResource NordicTextPrimary}" />

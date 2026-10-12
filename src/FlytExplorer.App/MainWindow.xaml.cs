@@ -257,7 +257,6 @@ public sealed partial class MainWindow : Window
         {
             SelectionMode      = ListViewSelectionMode.Extended,
             FontFamily         = new FontFamily("Segoe UI Variable"),
-            Foreground         = (SolidColorBrush)Application.Current.Resources["NordicTextPrimaryBrush"],
             ItemContainerStyle = (Style)WindowResources["FileListItemStyle"],
             ItemTemplate       = (DataTemplate)WindowResources["FileEntryTemplate"],
             Header             = BuildListHeader(),
@@ -286,13 +285,14 @@ public sealed partial class MainWindow : Window
         listView.SizeChanged += (_, _) => UpdateFooterHeight();
         data.Items.CollectionChanged += (_, _) => DispatcherQueue.TryEnqueue(UpdateFooterHeight);
 
-        listView.CanDragItems      = true;
-        listView.AllowDrop         = true;
-        listView.DoubleTapped     += FileListView_DoubleTapped;
-        listView.SelectionChanged += FileListView_SelectionChanged;
-        listView.KeyDown          += FileListView_KeyDown;
-        listView.DragItemsStarting += FileList_DragItemsStarting;
-        listView.DragOver          += FileList_DragOver;
+        listView.CanDragItems               = true;
+        listView.AllowDrop                  = true;
+        listView.DoubleTapped              += FileListView_DoubleTapped;
+        listView.SelectionChanged          += FileListView_SelectionChanged;
+        listView.KeyDown                   += FileListView_KeyDown;
+        listView.DragItemsStarting         += FileList_DragItemsStarting;
+        listView.DragOver                  += FileList_DragOver;
+        listView.ContainerContentChanging  += ListView_ContainerContentChanging;
         listView.Drop              += FileList_Drop;
 
         data.ListView = listView;
@@ -539,9 +539,6 @@ public sealed partial class MainWindow : Window
             UpdateActiveTabHeader();
             ExitSearchMode();
 
-            // Load thumbnails for the first 50 items asynchronously after the folder is shown.
-            // Fire-and-forget; cancelled automatically when the tab navigates away.
-            _ = LoadThumbnailsAsync(tab.Items, token);
         }
         catch (OperationCanceledException) when (uncTimeoutCts?.IsCancellationRequested == true && !baseCts.IsCancellationRequested)
         {
@@ -555,18 +552,34 @@ public sealed partial class MainWindow : Window
         finally { tab.Loading.IsActive = false; }
     }
 
-    private const int ThumbnailBatchLimit = 50;
+    // ── Scroll-triggered thumbnail loading via ContainerContentChanging ─────
+    // Phase 0: basic data binding completes. Register callback for phase 1 (thumbnail).
+    // Phase 1: async thumbnail fetch; sets ThumbnailBitmap → Image overlay appears.
+    // Items that scroll out of view before the fetch completes receive the result on
+    // next visibility — safe because ThumbnailBitmap is idempotent once set.
 
-    private async Task LoadThumbnailsAsync(
-        IEnumerable<FileEntryViewModel> items, CancellationToken ct)
+    private void ListView_ContainerContentChanging(
+        ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        foreach (var vm in items.Take(ThumbnailBatchLimit))
-        {
-            if (ct.IsCancellationRequested) break;
-            var bmp = await _thumbnailService.GetThumbnailAsync(vm.FullPath, 32, ct);
-            if (bmp != null)
-                vm.ThumbnailBitmap = bmp;
-        }
+        if (args.InRecycleQueue || args.Item is not FileEntryViewModel vm) return;
+
+        if (args.Phase == 0 && vm.ThumbnailBitmap == null)
+            args.RegisterUpdateCallback(ListView_ContainerContentChanging_Thumbnail);
+
+        args.Handled = true;
+    }
+
+    private async void ListView_ContainerContentChanging_Thumbnail(
+        ListViewBase sender, ContainerContentChangingEventArgs args)
+    {
+        if (args.InRecycleQueue || args.Item is not FileEntryViewModel vm) return;
+        if (vm.ThumbnailBitmap != null) return;
+
+        var bmp = await _thumbnailService.GetThumbnailAsync(
+            vm.FullPath, 32, CancellationToken.None);
+
+        if (bmp != null && !args.InRecycleQueue)
+            vm.ThumbnailBitmap = bmp;
     }
 
     private void Navigate(string path)
