@@ -115,14 +115,26 @@ public sealed partial class MainWindow : Window
         if (nCode >= 0 && ((int)lParam & unchecked((int)0x80000000)) == 0)
         {
             bool ctrl = (GetKeyState(0x11) & 0x8000) != 0; // VK_CONTROL
-            if (ctrl)
+            bool alt  = (GetKeyState(0x12) & 0x8000) != 0; // VK_MENU
+
+            if (ctrl && !alt)
             {
                 switch (wParam.ToInt32())
                 {
-                    case 0x54: DispatcherQueue.TryEnqueue(() => AddTab());                                           break; // T
+                    case 0x54: DispatcherQueue.TryEnqueue(() => AddTab());                                       break; // T
                     case 0x57: DispatcherQueue.TryEnqueue(() => CloseTab(_activeTabIndex));                      break; // W
                     case 0x4B: DispatcherQueue.TryEnqueue(() => ActivateSearch(SearchScope.Global));             break; // K
                     case 0x46: DispatcherQueue.TryEnqueue(() => ActivateSearch(SearchScope.CurrentFolder));      break; // F
+                    case 0x4C: DispatcherQueue.TryEnqueue(() => FocusAddressBar());                              break; // L
+                }
+            }
+            else if (alt && !ctrl)
+            {
+                switch (wParam.ToInt32())
+                {
+                    case 0x25: DispatcherQueue.TryEnqueue(() => GoBack());    break; // Left
+                    case 0x27: DispatcherQueue.TryEnqueue(() => GoForward()); break; // Right
+                    case 0x26: DispatcherQueue.TryEnqueue(() => GoUp());      break; // Up
                 }
             }
         }
@@ -631,7 +643,13 @@ public sealed partial class MainWindow : Window
         AddressBox.SelectionLength = 0;
     }
 
-    private void BackButton_Click(object sender, RoutedEventArgs e)
+    private void FocusAddressBar()
+    {
+        AddressBox.Focus(FocusState.Keyboard);
+        AddressBox.SelectAll();
+    }
+
+    private void GoBack()
     {
         if (ActiveTab.BackStack.TryPop(out var prev))
         {
@@ -640,7 +658,7 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void ForwardButton_Click(object sender, RoutedEventArgs e)
+    private void GoForward()
     {
         if (ActiveTab.ForwardStack.TryPop(out var next))
         {
@@ -649,11 +667,15 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void UpButton_Click(object sender, RoutedEventArgs e)
+    private void GoUp()
     {
         var parent = Path.GetDirectoryName(ActiveTab.CurrentPath);
         if (parent != null) Navigate(parent);
     }
+
+    private void BackButton_Click(object sender, RoutedEventArgs e)    => GoBack();
+    private void ForwardButton_Click(object sender, RoutedEventArgs e) => GoForward();
+    private void UpButton_Click(object sender, RoutedEventArgs e)      => GoUp();
 
     private void RefreshButton_Click(object sender, RoutedEventArgs e) =>
         _ = NavigateToAsync(ActiveTab.CurrentPath);
